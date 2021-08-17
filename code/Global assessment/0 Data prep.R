@@ -256,3 +256,4 @@ figure.2 = select(figure.2, -services)
 save(figure.1, figure.2, file = "0 dev/gta-28-ad/data/Global assessment/data.Rdata")
 
 
+
