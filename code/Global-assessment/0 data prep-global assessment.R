@@ -22,15 +22,18 @@ library(DBI)
 library(tidyverse)
 
 rm(list = ls())
+gta_setwd()
 
 #variables
 
 #implementing countries
 countries = gtalibrary::country.names
-relevant.juristictions = countries[countries$is.eu == 1, "name"]
-relevant.juristictions = c(relevant.juristictions, "United States of America", "China")
+eu.countries = countries[countries$is.eu == 1, "name"]
+relevant.juristictions = c(eu.countries, "United States of America", "China")
 max.intervention.value = 100000000 #absolute
 min.trade.share.value = 10000 #in Millions
+subsidy.intervention.types <- subset(gtalibrary::int.mast.types, mast.subchapter.id %in% c("L","P7","P8","P9"))$intervention.type
+
 #already checked cases which are to be excluded
 load(file = "0 report production/GTA 25/prep pre report/jumbo.data.Rdata")
 
@@ -76,7 +79,7 @@ gta.int.value=unique(subset(gta.int.value, !(is.na(prior.level) & is.na(new.leve
 gta_sql_pool_close()
 gta_sql_kill_connections()
 
-rm(list=setdiff(ls(), c("relevant.juristictions","max.intervention.value", "min.trade.share.value", "jumbo.data", "out", "gta.int.value" )))
+rm(list=setdiff(ls(), c("relevant.juristictions","max.intervention.value", "min.trade.share.value", "jumbo.data", "out", "gta.int.value", "subsidy.intervention.types", "eu.countries")))
 #1.2 load master 
 
 load(file = "data/master_plus - 210816.RData")
@@ -97,37 +100,47 @@ load(file = "data/master_plus - 210816.RData")
 ################################################################################
 #2. filter data -------------------------------------------------------------------
 
+#choose relevant data
 master = master %>% filter(implementing.jurisdiction %in% relevant.juristictions)%>%
-                      filter(mast.chapter %in% c("L", "P")) %>%
-                        filter(intervention.type == "Trade finance" | (affected.flow == "outward subsidy" & mast.chapter=="L"))
-                        
+                      filter(intervention.type %in% subsidy.intervention.types) %>%
+                        select(- c("implementing.jurisdiction", "i.un"))
+master = unique(master)
+
 
 
 #exclude interventions already check and determined to not be included in trade coverage
 master = master[!master$intervention.id %in% jumbo.data$intervention.id, ] #jumbo file
 master = master[!master$intervention.id %in% out, ] #excluded from trade coverage function
 
+
+
 #merge with amounts
 master = merge(master, gta.int.value, by ="intervention.id", all.x = T)
 
 
 
-#get data without values
+#get data without values (currently not excluded)
 na.cases = master[is.na(master$name), ] #29 cases
-master = master[!master$intervention.id %in% na.cases$intervention.id, ]
-
 na.cases.post.2016 = na.cases[na.cases$date.announced > as.Date("2016-01-01"), ] #only use cases after 2016 since amounts were not reported before that date
-
 nas = master[is.na(master$new.level), ]
-master = master[!master$intervention.id %in% nas, ]
-master = master[master$new.level < max.intervention.value, ]
 
+
+
+#make new columns
+master$is.under.100Mio = ifelse(is.na(master$new.level), "NO DATA", 
+                                ifelse(master$new.level < max.intervention.value, "TRUE", "FALSE"))
+
+
+master$is.trade.finance = ifelse(master$intervention.type == "Trade finance", TRUE, FALSE)
+master$is.L.outward = ifelse(master$affected.flow == "outward subsidy", TRUE, FALSE)
+master$is.trade.finance.or.L.outward = ifelse(master$is.L.outward | master$is.trade.finance, TRUE, FALSE)
+master$is.firm.specific = ifelse(master$eligible.firms == "firm-specific", TRUE, FALSE)
 
 #test for other anomalies in data and filter for wrong units
-test2 = master[master$name == "percent", ] #11 cases, Error but leave in, treat like its a dollar amount
-master = master[!(master$name == "percent" & master$new.level < 100), ] #get all "real percentage values away (such that are actually below 100, meaning actuall percentages)
-master = master[!master$name == "USD/unit",] #filter out cases with other units 
-master = master[!master$name == "USD/tonne",]
+# test2 = master[master$name == "percent", ] #11 cases, Error but leave in, treat like its a dollar amount
+# master = master[!(master$name == "percent" & master$new.level < 100), ] #get all "real percentage values away (such that are actually below 100, meaning actuall percentages)
+# master = master[!master$name == "USD/unit",] #filter out cases with other units 
+# master = master[!master$name == "USD/tonne",]
 
 
 
@@ -139,11 +152,22 @@ master = master[!master$name == "USD/tonne",]
 
 ################################################################################
 #3. add trade value data -------------------------------------------------------
-affected.flow.na = master[is.na(master$affected.flow),]
-master = master[!is.na(master$affected.flow),]
 your.data = master[master$affected.flow != "outward subsidy",]
-your.data = rbind(your.data, affected.flow.na)
 only.outward.subsidy = master[master$affected.flow == "outward subsidy",]
+
+
+#divide the data up into 4 chuncks, else the SQL server stops because runtime too long
+your.data1 = your.data[1:round(nrow(your.data)/4), ]
+your.data2 = your.data[(round(nrow(your.data)/4)+1):round(nrow(your.data)*2/4), ]
+your.data3 = your.data[(round(nrow(your.data)*2/4)+1):round(nrow(your.data)*3/4), ]
+your.data4 = your.data[(round(nrow(your.data)*3/4)+1):nrow(your.data), ]
+
+subdata = list(your.data1, your.data2, your.data3, your.data4)
+
+
+for (i in 1:4){
+
+your.data = subdata[[i]]
 
 #3.1 convert whats possible the quick way---------------------------------------
 # this code is taken directly form JF
@@ -283,16 +307,26 @@ if(compute.coverage){
 } 
 
 gta_sql_pool_close()
-i = 7
+
+subdata[[i]] = your.data
+
+}
+
+your.data = rbind(subdata[[1]], subdata[[2]], subdata[[3]], subdata[[4]])
+
 
 #3.2 convert rest of code via trade coverage function---------------------------
 
+#make column to fill later
 only.outward.subsidy = cbind(only.outward.subsidy, trade.value.global = NA)
 
-gta_trade_coverage(intervention.ids = only.outward.subsidy[7, "intervention.id"], 
+#run once to get right columns
+gta_trade_coverage(intervention.ids = 90883, 
                    keep.interventions = T, 
                    trade.statistic = "value")
 trade.coverage.estimates$`Trade coverage estimate for 2019`[1] = "NA"
+
+#run first row because lopps refers to row i-1
 
 gta_trade_coverage(intervention.ids = only.outward.subsidy[1, "intervention.id"], 
                    keep.interventions = T, 
@@ -300,6 +334,7 @@ gta_trade_coverage(intervention.ids = only.outward.subsidy[1, "intervention.id"]
 trade.coverage.estimates$`Trade coverage estimate for 2019`[1] = "NA"
 only.outward.subsidy[1, "trade.value.global"] = trade.coverage.estimates$`Trade coverage estimate for 2019`[1]
 
+#loop through all interventions and calculate trade coverage 
 start = Sys.time()
 for(i in 2:nrow(only.outward.subsidy)){
   
@@ -317,12 +352,13 @@ end = Sys.time()
 only.outward.subsidy$trade.value.global = round(only.outward.subsidy$trade.value.global/1000000, 2) #format the same way as in 3.1
 
 openxlsx::write.xlsx(only.outward.subsidy, "0 dev/gta-28-sh/code/Global-assessment/outwards.subsidy.cases.xlsx")
+openxlsx::write.xlsx(your.data, "0 dev/gta-28-sh/code/Global-assessment/non.outwards.subsidy.cases.xlsx")
 
 ################################################################################
 #4. clean up -------------------------------------------------------------------
 
 data = your.data[!is.na(your.data$trade.value.global), ]
-data = rbind(data, only.outward.subsidy)
+data = rbind(your.data, only.outward.subsidy)
 data.na = your.data[is.na(your.data$trade.value.global), ]
 
 
