@@ -99,7 +99,7 @@ load(file = "data/master_plus - 210816.RData")
 
 master = master %>% filter(implementing.jurisdiction %in% relevant.juristictions)%>%
                       filter(mast.chapter %in% c("L", "P")) %>%
-                        filter(intervention.type == "Trade finance" | affected.flow == "outward subsidy"  & mast.chapter=="L" ) #| eligible.firms == "firm-specific"
+                        filter(intervention.type == "Trade finance" | (affected.flow == "outward subsidy" & mast.chapter=="L"))
                         
 
 
