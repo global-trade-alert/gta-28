@@ -85,17 +85,6 @@ rm(list=setdiff(ls(), c("relevant.juristictions","max.intervention.value", "min.
 load(file = "data/master_plus - 210816.RData")
 
 
-#currently error in data slicer, so directly via master
-# gta_data_slicer(
-#   implementing.country = relevant.juristictions,
-#   keep.implementer = T,
-#   intervention.types = "trade finance",
-#   implementation.level = "firm specific",
-#   mast.chapters = c("L", "P"),
-#   keep.mast = T,
-# )
-
-
 
 ################################################################################
 #2. filter data -------------------------------------------------------------------
@@ -164,7 +153,9 @@ your.data4 = your.data[(round(nrow(your.data)*3/4)+1):nrow(your.data), ]
 
 subdata = list(your.data1, your.data2, your.data3, your.data4)
 
+run.non.subsidy.calc = F
 
+if(run.non.subsidy.calc){
 for (i in 1:4){
 
 your.data = subdata[[i]]
@@ -311,7 +302,7 @@ gta_sql_pool_close()
 subdata[[i]] = your.data
 
 }
-
+}
 your.data = rbind(subdata[[1]], subdata[[2]], subdata[[3]], subdata[[4]])
 
 
@@ -334,33 +325,50 @@ gta_trade_coverage(intervention.ids = only.outward.subsidy[1, "intervention.id"]
 trade.coverage.estimates$`Trade coverage estimate for 2019`[1] = "NA"
 only.outward.subsidy[1, "trade.value.global"] = trade.coverage.estimates$`Trade coverage estimate for 2019`[1]
 
-#loop through all interventions and calculate trade coverage 
-start = Sys.time()
-for(i in 2:nrow(only.outward.subsidy)){
-  
-  gta_trade_coverage(intervention.ids = only.outward.subsidy[i, "intervention.id"], 
-                     keep.interventions = T, 
-                     trade.statistic = "value")
-  if (trade.coverage.estimates$`Trade coverage estimate for 2019`[1] == only.outward.subsidy[i -1, "trade.value.global"]){
-    trade.coverage.estimates$`Trade coverage estimate for 2019`[1] = "NA"
-  }
-  only.outward.subsidy[i, "trade.value.global"] = trade.coverage.estimates$`Trade coverage estimate for 2019`[1]
-  
-}
-end = Sys.time()
+#loop through all interventions and calculate trade coverage, DO NOT RUN, takes 20h...
+# start = Sys.time()
+# for(i in 2:nrow(only.outward.subsidy)){
+#   
+#   gta_trade_coverage(intervention.ids = only.outward.subsidy[i, "intervention.id"], 
+#                      keep.interventions = T, 
+#                      trade.statistic = "value")
+#   if (trade.coverage.estimates$`Trade coverage estimate for 2019`[1] == only.outward.subsidy[i -1, "trade.value.global"]){
+#     trade.coverage.estimates$`Trade coverage estimate for 2019`[1] = "NA"
+#   }
+#   only.outward.subsidy[i, "trade.value.global"] = trade.coverage.estimates$`Trade coverage estimate for 2019`[1]
+#   
+# }
+# end = Sys.time()
 
-only.outward.subsidy$trade.value.global = round(only.outward.subsidy$trade.value.global/1000000, 2) #format the same way as in 3.1
 
-openxlsx::write.xlsx(only.outward.subsidy, "0 dev/gta-28-sh/code/Global-assessment/outwards.subsidy.cases.xlsx")
-openxlsx::write.xlsx(your.data, "0 dev/gta-28-sh/code/Global-assessment/non.outwards.subsidy.cases.xlsx")
+
+#only.outward.subsidy$trade.value.global = round(only.outward.subsidy$trade.value.global/1000000, 2) #format the same way as in 3.1
+# 
+# openxlsx::write.xlsx(only.outward.subsidy, "0 dev/gta-28-sh/code/Global-assessment/outwards.subsidy.cases.xlsx")
+# openxlsx::write.xlsx(your.data, "0 dev/gta-28-sh/code/Global-assessment/non.outwards.subsidy.cases.xlsx")
 
 ################################################################################
 #4. clean up -------------------------------------------------------------------
 
-data = your.data[!is.na(your.data$trade.value.global), ]
-data = rbind(your.data, only.outward.subsidy)
-data.na = your.data[is.na(your.data$trade.value.global), ]
+#load already calculated data
+non.outwards.subsidy.calculated = read.xlsx("0 dev/gta-28-sh/code/Global-assessment/non.outwards.subsidy.cases.xlsx")
+outwards.subsidy.calculated = read.xlsx("0 dev/gta-28-sh/data/outward.subsidy.cases.complete.xlsx")
 
+#adjust value (to billions)
+non.outwards.subsidy.calculated$trade.value.global = round(non.outwards.subsidy.calculated$trade.value.global/1000, 2)
+outwards.subsidy.calculated$trade.value.global = round(as.numeric(outwards.subsidy.calculated$trade.value.global)/1000000000, 2)
 
-data = data[data$trade.value.global > min.trade.share.value, ] 
+data = rbind(non.outwards.subsidy.calculated,outwards.subsidy.calculated )
+
+#pretty up
+
+data = data %>% select(-c("state.act.id", "eligible.firms","affected.flow", "currently.in.force", "i.atleastone.G20", "mast.id", "mast.chapter","prior.level", "new.level", "name" ))
+data$date.announced = as.Date(data$date.announced, origin = "1899-12-30")
+data$date.implemented = as.Date(data$date.implemented, origin = "1899-12-30")
+data$date.removed = as.Date(data$date.removed, origin = "1899-12-30")
+data$date.published = as.Date(data$date.published, origin = "1899-12-30")
+
+#SH: according to SE: "produce a list of subsidy interventions that our raw estimates suggest cover more than $10 billion in trade", so therefore leave NAs and less than 10 Bi0 out?
+data = data[!is.na(data$trade.value.global), ]
+data = data[data$trade.value.global > 10, ]
 
