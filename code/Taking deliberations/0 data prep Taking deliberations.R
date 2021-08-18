@@ -122,7 +122,6 @@ eu.subsidy.dates = unique(data2[data2$implementing.jurisdiction == "EU28", ]$dat
 #2.2.2 get all harmful subsidy interventions for the relevant countries and calculate if they are inacted after the mentioned timeframes
 
 #get all harmfull subsidy interventions of any type
-subsidy.intervention.types <- subset(gtalibrary::int.mast.types, mast.subchapter.id %in% c("L","P7","P8","P9"))$intervention.type
 gta_data_slicer(implementing.country = implementing.juristiction, 
                 keep.implementer = T, 
                 intervention.types = subsidy.intervention.types,
@@ -271,7 +270,7 @@ eu.percentages.subsidies = data.frame("region" = c("USA", "China"),
 
 gta_data_slicer(implementing.country = implementing.juristiction, 
                 keep.implementer = T, 
-                intervention.types = subsidy.intervention.types,
+                intervention.types = import.restrictions,
                 keep.type = T, 
                 affected.country = implementing.juristiction, 
                 keep.affected = T, 
@@ -304,7 +303,7 @@ usa.eu.import.restriction.response.dates = unique(data2[data2$implementing.juris
 
 #and for EU
 eu.china.import.restriction.response.dates = unique(data2[data2$implementing.jurisdiction == "EU28"& (data2$affected.jurisdiction == 42), ]$date.announced)
-eu.import.restriction.response.dates = unique(data2[data2$implementing.jurisdiction == "EU28"& (data2$affected.jurisdiction == 221), ]$date.announced)
+eu.usa.import.restriction.response.dates = unique(data2[data2$implementing.jurisdiction == "EU28"& (data2$affected.jurisdiction == 221), ]$date.announced)
 
 
 
@@ -364,19 +363,19 @@ eu.table = cbind(eu.table, import.restriction.usa.eu.yes.6m, import.restriction.
 
 #calculate percentages
 
-china.percentages.subsidies = data.frame("region" = c("USA", "EU"), 
+china.percentages.import.restriction = data.frame("region" = c("USA", "EU"), 
                                          "6 Months" = c(sum(china.table$import.restriction.usa.china.yes.6m)/nrow(china.table), sum(china.table$import.restriction.eu.china.yes.6m)/nrow(china.table)),
                                          "12 Months" = c(sum(china.table$import.restriction.usa.china.yes.12m)/nrow(china.table), sum(china.table$import.restriction.eu.china.yes.12m)/nrow(china.table)),
                                          "24 Months" = c(sum(china.table$import.restriction.usa.china.yes.24m)/nrow(china.table), sum(china.table$import.restriction.eu.china.yes.24m)/nrow(china.table))
 )
 
-usa.percentages.subsidies = data.frame("region" = c("China", "EU"), 
+usa.percentages.import.restriction = data.frame("region" = c("China", "EU"), 
                                        "6 Months" = c(sum(usa.table$import.restriction.china.usa.yes.6m)/nrow(usa.table), sum(usa.table$import.restriction.eu.usa.yes.6m)/nrow(usa.table)),
                                        "12 Months" = c(sum(usa.table$import.restriction.china.usa.yes.12m)/nrow(usa.table), sum(usa.table$import.restriction.eu.usa.yes.12m)/nrow(usa.table)),
                                        "24 Months" = c(sum(usa.table$import.restriction.china.usa.yes.24m)/nrow(usa.table), sum(usa.table$import.restriction.eu.usa.yes.24m)/nrow(usa.table))
 )
 
-eu.percentages.subsidies = data.frame("region" = c("USA", "China"), 
+eu.percentages.import.restriction = data.frame("region" = c("USA", "China"), 
                                       "6 Months" = c(sum(eu.table$import.restriction.usa.eu.yes.6m)/nrow(eu.table), sum(eu.table$import.restriction.china.eu.yes.6m)/nrow(eu.table)),
                                       "12 Months" = c(sum(eu.table$import.restriction.usa.eu.yes.12m)/nrow(eu.table), sum(eu.table$import.restriction.china.eu.yes.12m)/nrow(eu.table)),
                                       "24 Months" = c(sum(eu.table$import.restriction.usa.eu.yes.24m)/nrow(eu.table), sum(eu.table$import.restriction.china.eu.yes.24m)/nrow(eu.table))
