@@ -121,4 +121,182 @@ gtsave(outward.table, paste0(out.path, table.name,".png"))
 xlsx::write.xlsx(outward.table, file=paste0(out.path, table.name,".xlsx"))
 
 
+########################## Figure 2: ############################### 
+
+
+map.name = "Figure 2 - Frequency interests harmed by L inward policies - 2019"
+
+harmed.l.inward = merge(harmed.l.inward, select(country.names, name, un_code), by.x = "affected.jurisdiction", by.y = "name")
+harmed.l.inward.data = gta_plot_map_df(data = harmed.l.inward, countries = "un_code", values = "count")
+
+
+harmed.inward.plot <- ggplot() +
+  geom_polygon(data = subset(harmed.l.inward.data, country != "Antarctica"), aes(x = long, y = lat, group = group), fill="#dadada", size = 0.15, color = "white") +
+  geom_polygon(data = subset(harmed.l.inward.data, country != "Antarctica"), aes(x = long, y = lat, group = group, fill=value), na.rm = T, size = 0.15, color = "white") +
+  geom_polygon(data = subset(harmed.l.inward.data, country == "Greenland"), aes(x=long, y=lat, group = group), fill="#dadada", size = 0.15, colour = "white") +
+  coord_fixed() + # Important to fix world map proportions
+  scale_x_continuous(limits = c(-13900000,17000000))+
+  ggtitle("Frequency of interests harmed by L inward policies in 2019")+
+  labs(x = "", y = "", caption = "Source: Global Trade Alert") +
+  #scale_fill_manual(values = c("Slower Growth" = gta_colour$blue[4], "Faster Growth" = gta_colour$blue[2]),
+  # position="bottom", labels=c("Faster improvement of labour", "Slower improvement of labour"), na.translate=F) +
+  # scale_fill_gradientn(midpoint = mean(labour$difference), 
+  #                      high = gta_colour$red[1], mid = gta_colour$amber[4], low = gta_colour$green[1], 
+  #                      space = "Lab")+
+  scale_fill_gradientn(name="Number of products affected",
+                       na.value="#c6c6c6",
+                       limits=c(0,max(harmed.l.inward.data$value, na.rm=T)),
+                       colors = c(gta_colour$amber[4], gta_colour$amber[1], gta_colour$red[1]),
+                       breaks=round(seq(0, max(harmed.l.inward.data$value, na.rm = T), max(harmed.l.inward.data$value, na.rm=T) / 4)),
+                       guide=guide_colorbar(barwidth=13, label.hjust = 0.5, title.position = "top"),
+                       labels=round(seq(0, max(harmed.l.inward.data$value, na.rm = T), max(harmed.l.inward.data$value, na.rm=T) / 4)))+
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        panel.grid = element_blank(),
+        panel.background = element_blank(),
+        legend.position = c(0.5,0),
+        legend.justification = c(0.5,0.4),
+        legend.direction = "horizontal",
+        plot.title = element_text(family = "Open Sans", face = "bold", colour = "#333333", size = 11, hjust = 0.5, margin = margin(t=6,b=6)),
+        plot.subtitle = element_text(family = "Open Sans", face = "bold", colour = "#333333", size = 9, hjust = 0.5, margin = margin(b=10)),
+        legend.title = element_text(vjust= 0.3, family="", colour = "#333333", size = 11*0.8, margin = margin(r=10,b=5),hjust=0.5),
+        legend.text = element_text(family="", colour = "#333333", size = 11*0.75, angle = 0, hjust=0, vjust=1, margin = margin(r=10)),
+        legend.text.align = 0.6,
+        legend.background = element_rect(fill="transparent"),
+        plot.background = element_rect(fill="#F9F9F9"),
+        plot.caption = element_text(hjust = 0.5, vjust = 6, margin = margin(t=60, b=5),size=8, color="#777777",lineheight = 1))
+
+harmed.inward.plot
+gta_plot_saver(plot = harmed.inward.plot,
+               path = out.path,
+               name = map.name,
+               png = T,
+               width = 27.4,
+               height = 17.2)
+xlsx::write.xlsx(harmed.l.inward, file=paste0(out.path, map.name, ".xlsx"))
+
+
+
+########################## Figure 3: ############################### 
+
+
+map.name = "Figure 3 - Frequency interests harmed by L&P outward policies - 2019"
+
+harmed.p.outward = merge(harmed.p.outward, select(country.names, name, un_code), by.x = "affected.jurisdiction", by.y = "name")
+harmed.p.outward.data = gta_plot_map_df(data = harmed.p.outward, countries = "un_code", values = "count")
+
+
+harmed.outward.plot <- ggplot() +
+  geom_polygon(data = subset(harmed.p.outward.data, country != "Antarctica"), aes(x = long, y = lat, group = group), fill="#dadada", size = 0.15, color = "white") +
+  geom_polygon(data = subset(harmed.p.outward.data, country != "Antarctica"), aes(x = long, y = lat, group = group, fill=value), na.rm = T, size = 0.15, color = "white") +
+  geom_polygon(data = subset(harmed.p.outward.data, country == "Greenland"), aes(x=long, y=lat, group = group), fill="#dadada", size = 0.15, colour = "white") +
+  coord_fixed() + # Important to fix world map proportions
+  scale_x_continuous(limits = c(-13900000,17000000))+
+  ggtitle("Frequency of interests harmed by L inward policies in 2019")+
+  labs(x = "", y = "", caption = "Source: Global Trade Alert") +
+  #scale_fill_manual(values = c("Slower Growth" = gta_colour$blue[4], "Faster Growth" = gta_colour$blue[2]),
+  # position="bottom", labels=c("Faster improvement of labour", "Slower improvement of labour"), na.translate=F) +
+  # scale_fill_gradientn(midpoint = mean(labour$difference), 
+  #                      high = gta_colour$red[1], mid = gta_colour$amber[4], low = gta_colour$green[1], 
+  #                      space = "Lab")+
+  scale_fill_gradientn(name="Number of products affected",
+                       na.value="#c6c6c6",
+                       limits=c(0,max(harmed.p.outward.data$value, na.rm=T)),
+                       colors = c(gta_colour$amber[4], gta_colour$amber[1], gta_colour$red[1]),
+                       breaks=round(seq(0, max(harmed.p.outward.data$value, na.rm = T), max(harmed.p.outward.data$value, na.rm=T) / 4)),
+                       guide=guide_colorbar(barwidth=13, label.hjust = 0.5, title.position = "top"),
+                       labels=round(seq(0, max(harmed.p.outward.data$value, na.rm = T), max(harmed.p.outward.data$value, na.rm=T) / 4)))+
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        panel.grid = element_blank(),
+        panel.background = element_blank(),
+        legend.position = c(0.5,0),
+        legend.justification = c(0.5,0.4),
+        legend.direction = "horizontal",
+        plot.title = element_text(family = "Open Sans", face = "bold", colour = "#333333", size = 11, hjust = 0.5, margin = margin(t=6,b=6)),
+        plot.subtitle = element_text(family = "Open Sans", face = "bold", colour = "#333333", size = 9, hjust = 0.5, margin = margin(b=10)),
+        legend.title = element_text(vjust= 0.3, family="", colour = "#333333", size = 11*0.8, margin = margin(r=10,b=5),hjust=0.5),
+        legend.text = element_text(family="", colour = "#333333", size = 11*0.75, angle = 0, hjust=0, vjust=1, margin = margin(r=10)),
+        legend.text.align = 0.6,
+        legend.background = element_rect(fill="transparent"),
+        plot.background = element_rect(fill="#F9F9F9"),
+        plot.caption = element_text(hjust = 0.5, vjust = 6, margin = margin(t=60, b=5),size=8, color="#777777",lineheight = 1))
+
+harmed.outward.plot
+gta_plot_saver(plot = harmed.outward.plot,
+               path = out.path,
+               name = map.name,
+               png = T,
+               width = 27.4,
+               height = 17.2)
+xlsx::write.xlsx(harmed.p.outward, file=paste0(out.path, map.name, ".xlsx"))
+
+
+
+########################## Figure 4: ############################### 
+
+
+# map.name = "Figure 4 - Frequency interests benefiting from L&P outward policies - 2019"
+# 
+# benefited.p.outward = merge(benefited.p.outward, select(country.names, name, un_code), by.x = "affected.jurisdiction", by.y = "name")
+# benefited.p.outward.data = gta_plot_map_df(data = benefited.p.outward, countries = "un_code", values = "count")
+# 
+# 
+# benefitted.outward.plot <- ggplot() +
+#   geom_polygon(data = subset(benefited.p.outward.data, country != "Antarctica"), aes(x = long, y = lat, group = group), fill="#dadada", size = 0.15, color = "white") +
+#   geom_polygon(data = subset(benefited.p.outward.data, country != "Antarctica"), aes(x = long, y = lat, group = group, fill=value), na.rm = T, size = 0.15, color = "white") +
+#   geom_polygon(data = subset(benefited.p.outward.data, country == "Greenland"), aes(x=long, y=lat, group = group), fill="#dadada", size = 0.15, colour = "white") +
+#   coord_fixed() + # Important to fix world map proportions
+#   scale_x_continuous(limits = c(-13900000,17000000))+
+#   ggtitle("Frequency of interests harmed by L inward policies in 2019")+
+#   labs(x = "", y = "", caption = "Source: Global Trade Alert") +
+#   #scale_fill_manual(values = c("Slower Growth" = gta_colour$blue[4], "Faster Growth" = gta_colour$blue[2]),
+#   # position="bottom", labels=c("Faster improvement of labour", "Slower improvement of labour"), na.translate=F) +
+#   # scale_fill_gradientn(midpoint = mean(labour$difference), 
+#   #                      high = gta_colour$red[1], mid = gta_colour$amber[4], low = gta_colour$green[1], 
+#   #                      space = "Lab")+
+#   scale_fill_gradientn(name="Number of products affected",
+#                        na.value="#c6c6c6",
+#                        limits=c(0,max(benefited.p.outward.data$value, na.rm=T)),
+#                        colors = c(gta_colour$amber[4], gta_colour$amber[1], gta_colour$red[1]),
+#                        breaks=round(seq(0, max(benefited.p.outward.data$value, na.rm = T), max(benefited.p.outward.data$value, na.rm=T) / 4)),
+#                        guide=guide_colorbar(barwidth=13, label.hjust = 0.5, title.position = "top"),
+#                        labels=round(seq(0, max(benefited.p.outward.data$value, na.rm = T), max(benefited.p.outward.data$value, na.rm=T) / 4)))+
+#   theme(axis.title.x=element_blank(),
+#         axis.text.x=element_blank(),
+#         axis.ticks.x=element_blank(),
+#         axis.title.y=element_blank(),
+#         axis.text.y=element_blank(),
+#         axis.ticks.y=element_blank(),
+#         panel.grid = element_blank(),
+#         panel.background = element_blank(),
+#         legend.position = c(0.5,0),
+#         legend.justification = c(0.5,0.4),
+#         legend.direction = "horizontal",
+#         plot.title = element_text(family = "Open Sans", face = "bold", colour = "#333333", size = 11, hjust = 0.5, margin = margin(t=6,b=6)),
+#         plot.subtitle = element_text(family = "Open Sans", face = "bold", colour = "#333333", size = 9, hjust = 0.5, margin = margin(b=10)),
+#         legend.title = element_text(vjust= 0.3, family="", colour = "#333333", size = 11*0.8, margin = margin(r=10,b=5),hjust=0.5),
+#         legend.text = element_text(family="", colour = "#333333", size = 11*0.75, angle = 0, hjust=0, vjust=1, margin = margin(r=10)),
+#         legend.text.align = 0.6,
+#         legend.background = element_rect(fill="transparent"),
+#         plot.background = element_rect(fill="#F9F9F9"),
+#         plot.caption = element_text(hjust = 0.5, vjust = 6, margin = margin(t=60, b=5),size=8, color="#777777",lineheight = 1))
+# 
+# benefitted.outward.plot
+# gta_plot_saver(plot = benefitted.outward.plot,
+#                path = out.path,
+#                name = map.name,
+#                png = T,
+#                width = 27.4,
+#                height = 17.2)
+# xlsx::write.xlsx(benefited.p.outward, file=paste0(out.path, map.name, ".xlsx"))
+
 
