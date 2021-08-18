@@ -23,6 +23,7 @@ library(openxlsx)
 library(gtalibrary)
 library(lubridate)
 library(tidyverse)
+library(splitstackshape)
 
 rm(list = ls())
 gta_setwd()
@@ -106,15 +107,26 @@ gta_data_slicer(implementing.country = implementing.juristiction,
 data2 = master.sliced[master.sliced$affected.jurisdiction %in% implementing.juristiction, ] #only get right affecte juristictions
 data2$affected.jurisdiction = ifelse(data2$affected.jurisdiction %in% eu, "EU28", data2$affected.jurisdiction) #change EU member states to EU
 data2$implementing.jurisdiction = ifelse(data2$implementing.jurisdiction %in% eu, "EU28", data2$implementing.jurisdiction)
-data2 = data2 %>% select( - c("affected.sector", "affected.product", "a.un", "i.un")) %>%
+data2 = data2 %>% select( - c("affected.sector","a.un", "i.un")) %>%
                     filter(!data2$implementing.jurisdiction == data2$affected.jurisdiction) #filter so we do not have multiple intervention doubled 
 data2 = unique(data2)
 length(data2$intervention.id[table(data2$intervention.id)>2]) #no more than 2 interventios per intervention id 
 
-#get dates when subsidies were announced
-china.subsidy.dates = unique(data2[data2$implementing.jurisdiction == 42, ]$date.announced)
-usa.subsidy.dates = unique(data2[data2$implementing.jurisdiction == 221, ]$date.announced)
-eu.subsidy.dates = unique(data2[data2$implementing.jurisdiction == "EU28", ]$date.announced)
+#find single HS codes
+data2 = cSplit(data2, "affected.product", direction = "long")
+data2$affected.product = ifelse(nchar(data2$affected.product)<6, paste0("0", data2$affected.product) ,data2$affected.product ) #cSplit transforms column to numeric and erases 0
+
+#quick check
+min(nchar(na.omit(data2$affected.product)))
+max(nchar(na.omit(data2$affected.product)))
+
+
+
+
+#get date/product pairs 
+china.subsidy.dates = na.omit(unique(data2[data2$implementing.jurisdiction == 42, c("date.announced", "affected.product")]))
+usa.subsidy.dates = unique(data2[data2$implementing.jurisdiction == 221, c("date.announced", "affected.product")])
+eu.subsidy.dates = unique(data2[data2$implementing.jurisdiction == "EU28",c("date.announced", "affected.product") ])
 
 
 
@@ -137,104 +149,360 @@ gta_data_slicer(implementing.country = implementing.juristiction,
 data2 = master.sliced[master.sliced$affected.jurisdiction %in% implementing.juristiction, ] #only get right affecte juristictions
 data2$affected.jurisdiction = ifelse(data2$affected.jurisdiction %in% eu, "EU28", data2$affected.jurisdiction) #change EU member states to EU
 data2$implementing.jurisdiction = ifelse(data2$implementing.jurisdiction %in% eu, "EU28", data2$implementing.jurisdiction)
-data2 = data2 %>% select( - c("affected.sector", "affected.product", "a.un", "i.un")) %>%
+data2 = data2 %>% select( - c("affected.sector", "a.un", "i.un")) %>%
   filter(!data2$implementing.jurisdiction == data2$affected.jurisdiction) #filter so we do not have multiple intervention doubled 
 data2 = unique(data2)
 length(data2$intervention.id[table(data2$intervention.id)>2]) #no more than 2 interventios per intervention id 
 
+#find single HS codes
+data2 = cSplit(data2, "affected.product", direction = "long")
+data2$affected.product = ifelse(nchar(data2$affected.product)<6, paste0("0", data2$affected.product) ,data2$affected.product ) #cSplit transforms column to numeric and erases 0
+
+#quick check
+min(nchar(na.omit(data2$affected.product)))
+max(nchar(na.omit(data2$affected.product)))
 
 
 
 
 #get all the dates on which china implemented a subsidy that hurts the US and for EU
-china.us.subsidy.response.dates = unique(data2[data2$implementing.jurisdiction == 42& (data2$affected.jurisdiction == 221), ]$date.announced)
-china.eu.subsidy.response.dates = unique(data2[data2$implementing.jurisdiction == 42& (data2$affected.jurisdiction == "EU28"), ]$date.announced)
+china.us.subsidy.response.dates = unique(data2[data2$implementing.jurisdiction == 42& (data2$affected.jurisdiction == 221),c("date.announced", "affected.product") ])
+china.eu.subsidy.response.dates = unique(data2[data2$implementing.jurisdiction == 42& (data2$affected.jurisdiction == "EU28"),c("date.announced", "affected.product") ])
 
 #same for the US
-usa.china.subsidy.response.dates = unique(data2[data2$implementing.jurisdiction == 221 & (data2$affected.jurisdiction == 42), ]$date.announced)
-usa.eu.subsidy.response.dates = unique(data2[data2$implementing.jurisdiction == 221 & (data2$affected.jurisdiction == "EU28"), ]$date.announced)
+usa.china.subsidy.response.dates = unique(data2[data2$implementing.jurisdiction == 221 & (data2$affected.jurisdiction == 42),c("date.announced", "affected.product") ])
+usa.eu.subsidy.response.dates = unique(data2[data2$implementing.jurisdiction == 221 & (data2$affected.jurisdiction == "EU28"),c("date.announced", "affected.product") ])
 
 #and for EU
-eu.china.subsidy.response.dates = unique(data2[data2$implementing.jurisdiction == "EU28"& (data2$affected.jurisdiction == 42), ]$date.announced)
-eu.usa.subsidy.response.dates = unique(data2[data2$implementing.jurisdiction == "EU28"& (data2$affected.jurisdiction == 221), ]$date.announced)
+eu.china.subsidy.response.dates = unique(data2[data2$implementing.jurisdiction == "EU28"& (data2$affected.jurisdiction == 42), c("date.announced", "affected.product")])
+eu.usa.subsidy.response.dates = unique(data2[data2$implementing.jurisdiction == "EU28"& (data2$affected.jurisdiction == 221), c("date.announced", "affected.product")])
 
 
 
 
 
 #create tables with intervals after announcement of subsidies
-china.table = data.frame("subsidy.dates" = china.subsidy.dates,
-                         "6m.interval" = interval(ymd(china.subsidy.dates), china.subsidy.dates  %m+%  months(6)),
-                         "12m.interval" = interval(ymd(china.subsidy.dates), china.subsidy.dates  %m+%  months(12)),
-                         "24m.interval" = interval(ymd(china.subsidy.dates), china.subsidy.dates  %m+%  months(24))
+china.table = data.frame("subsidy.dates" = china.subsidy.dates$date.announced,
+                         "affected.product" = china.subsidy.dates$affected.product,
+                         "6m.interval" = interval(ymd(china.subsidy.dates$date.announced), china.subsidy.dates$date.announced  %m+%  months(6)),
+                         "12m.interval" = interval(ymd(china.subsidy.dates$date.announced), china.subsidy.dates$date.announced  %m+%  months(12)),
+                         "24m.interval" = interval(ymd(china.subsidy.dates$date.announced), china.subsidy.dates$date.announced  %m+%  months(24))
                          )
 
-usa.table = data.frame("subsidy.dates" = usa.subsidy.dates,
-                         "6m.interval" = interval(ymd(usa.subsidy.dates), usa.subsidy.dates  %m+%  months(6)),
-                         "12m.interval" = interval(ymd(usa.subsidy.dates), usa.subsidy.dates  %m+%  months(12)),
-                         "24m.interval" = interval(ymd(usa.subsidy.dates), usa.subsidy.dates  %m+%  months(24))
+usa.table = data.frame("subsidy.dates" = usa.subsidy.dates$date.announced,
+                       "affected.product" = usa.subsidy.dates$affected.product,
+                         "6m.interval" = interval(ymd(usa.subsidy.dates$date.announced), usa.subsidy.dates$date.announced  %m+%  months(6)),
+                         "12m.interval" = interval(ymd(usa.subsidy.dates$date.announced), usa.subsidy.dates$date.announced  %m+%  months(12)),
+                         "24m.interval" = interval(ymd(usa.subsidy.dates$date.announced), usa.subsidy.dates$date.announced  %m+%  months(24))
                          )
 
-eu.table = data.frame("subsidy.dates" = eu.subsidy.dates,
-                         "6m.interval" = interval(ymd(eu.subsidy.dates), eu.subsidy.dates  %m+%  months(6)),
-                         "12m.interval" = interval(ymd(eu.subsidy.dates), eu.subsidy.dates  %m+%  months(12)),
-                         "24m.interval" = interval(ymd(eu.subsidy.dates), eu.subsidy.dates  %m+%  months(24))
+eu.table = data.frame("subsidy.dates" = eu.subsidy.dates$date.announced,
+                      "affected.product" = eu.subsidy.dates$affected.product,
+                         "6m.interval" = interval(ymd(eu.subsidy.dates$date.announced), eu.subsidy.dates$date.announced  %m+%  months(6)),
+                         "12m.interval" = interval(ymd(eu.subsidy.dates$date.announced), eu.subsidy.dates$date.announced  %m+%  months(12)),
+                         "24m.interval" = interval(ymd(eu.subsidy.dates$date.announced), eu.subsidy.dates$date.announced  %m+%  months(24))
                          )
 
+#discard of not used HS to not waste time in calculations
+china.us.subsidy.response.dates = china.us.subsidy.response.dates[china.us.subsidy.response.dates$affected.product %in% usa.table$affected.product, ] #
+china.eu.subsidy.response.dates = china.eu.subsidy.response.dates[china.eu.subsidy.response.dates$affected.product %in% eu.table$affected.product, ] #
+
+usa.china.subsidy.response.dates = usa.china.subsidy.response.dates[usa.china.subsidy.response.dates$affected.product %in% china.table$affected.product, ] #
+usa.eu.subsidy.response.dates = usa.eu.subsidy.response.dates[usa.eu.subsidy.response.dates$affected.product %in% eu.table$affected.product, ] #
+
+eu.china.subsidy.response.dates = eu.china.subsidy.response.dates[eu.china.subsidy.response.dates$affected.product %in% china.table$affected.product, ] #
+eu.usa.subsidy.response.dates = eu.usa.subsidy.response.dates[eu.usa.subsidy.response.dates$affected.product %in% china.table$affected.product, ] #
 
 
 
 
-#check if in these intervals were subsidies of other countries
+
+#go through all all combinations to check if there is a pair for which HS codes matches and date is in interval)
+
+##China with retaliation usa
+
+#6m
+for (i in 1:nrow(china.table)){
+  possible.matches = usa.china.subsidy.response.dates[usa.china.subsidy.response.dates$date.announced %within% china.table[i, "X6m.interval",],] #select by interval
+  possible.matches = possible.matches[possible.matches$affected.product%in% china.table[i, "affected.product"],]
+  
+  if (nrow(possible.matches) > 0){
+    china.table$subsidy.usa.china.yes.6m[i] = 1
+  }
+  else
+    china.table$subsidy.usa.china.yes.6m[i] = 0
+}
+
+#12m
+for (i in 1:nrow(china.table)){
+  possible.matches = usa.china.subsidy.response.dates[usa.china.subsidy.response.dates$date.announced %within% china.table[i, "X12m.interval",],] #select by interval
+  possible.matches = possible.matches[possible.matches$affected.product%in% china.table[i, "affected.product"],]
+  
+  if (nrow(possible.matches) > 0){
+    china.table$subsidy.usa.china.yes.12m[i] = 1
+  }
+  else
+    china.table$subsidy.usa.china.yes.12m[i] = 0
+}
+
+#24m
+for (i in 1:nrow(china.table)){
+  possible.matches = usa.china.subsidy.response.dates[usa.china.subsidy.response.dates$date.announced %within% china.table[i, "X24m.interval",],] #select by interval
+  possible.matches = possible.matches[possible.matches$affected.product%in% china.table[i, "affected.product"],]
+  
+  if (nrow(possible.matches) > 0){
+    china.table$subsidy.usa.china.yes.24m[i] = 1
+  }
+  else
+    china.table$subsidy.usa.china.yes.24m[i] = 0
+}
+
+##China with retaliation EU
+
+#6m
+for (i in 1:nrow(china.table)){
+  possible.matches = eu.china.subsidy.response.dates[eu.china.subsidy.response.dates$date.announced %within% china.table[i, "X6m.interval",],] #select by interval
+  possible.matches = possible.matches[possible.matches$affected.product%in% china.table[i, "affected.product"],]
+  
+  if (nrow(possible.matches) > 0){
+    china.table$subsidy.eu.china.yes.6m[i] = 1
+  }
+  else
+    china.table$subsidy.eu.china.yes.6m[i] = 0
+}
+
+#12m
+for (i in 1:nrow(china.table)){
+  possible.matches = eu.china.subsidy.response.dates[eu.china.subsidy.response.dates$date.announced %within% china.table[i, "X12m.interval",],] #select by interval
+  possible.matches = possible.matches[possible.matches$affected.product%in% china.table[i, "affected.product"],]
+  
+  if (nrow(possible.matches) > 0){
+    china.table$subsidy.eu.china.yes.12m[i] = 1
+  }
+  else
+    china.table$subsidy.eu.china.yes.12m[i] = 0
+}
+
+#24m
+for (i in 1:nrow(china.table)){
+  possible.matches = eu.china.subsidy.response.dates[eu.china.subsidy.response.dates$date.announced %within% china.table[i, "X24m.interval",],] #select by interval
+  possible.matches = possible.matches[possible.matches$affected.product%in% china.table[i, "affected.product"],]
+  
+  if (nrow(possible.matches) > 0){
+    china.table$subsidy.eu.china.yes.24m[i] = 1
+  }
+  else
+    china.table$subsidy.eu.china.yes.24m[i] = 0
+}
 
 
-###china
-#we check if in the intervals between the time china announced a subsidy that hurt the US and 6/12/24 months the US also announced a subsidy that hurts china
-#USA
-subsidy.usa.china.yes.6m = as.numeric(unlist(lapply(china.table$X6m.interval, FUN = function(x)(ifelse(any(ymd(usa.china.subsidy.response.dates) %within% x), "1", "0")))))
-subsidy.usa.china.yes.12m = as.numeric(unlist(lapply(china.table$X12m.interval, FUN = function(x)(ifelse(any(ymd(usa.china.subsidy.response.dates) %within% x), "1", "0")))))
-subsidy.usa.china.yes.24m = as.numeric(unlist(lapply(china.table$X24m.interval, FUN = function(x)(ifelse(any(ymd(usa.china.subsidy.response.dates) %within% x), "1", "0")))))
-
-#EU
-subsidy.eu.china.yes.6m = as.numeric(unlist(lapply(china.table$X6m.interval, FUN = function(x)(ifelse(any(ymd(eu.china.subsidy.response.dates) %within% x), "1", "0")))))
-subsidy.eu.china.yes.12m = as.numeric(unlist(lapply(china.table$X12m.interval, FUN = function(x)(ifelse(any(ymd(eu.china.subsidy.response.dates) %within% x), "1", "0")))))
-subsidy.eu.china.yes.24m = as.numeric(unlist(lapply(china.table$X24m.interval, FUN = function(x)(ifelse(any(ymd(eu.china.subsidy.response.dates) %within% x), "1", "0")))))
-
-#make a table
-china.table = cbind(china.table, subsidy.usa.china.yes.6m, subsidy.usa.china.yes.12m, subsidy.usa.china.yes.24m, subsidy.eu.china.yes.6m, subsidy.eu.china.yes.12m, subsidy.eu.china.yes.24m )
 
 
-###usa
-#we check if in the intervals between the time china announced a subsidy that hurt the US and 6/12/24 months the US also announced a subsidy that hurts china
-#China
-subsidy.china.usa.yes.6m = as.numeric(unlist(lapply(usa.table$X6m.interval, FUN = function(x)(ifelse(any(ymd(china.us.subsidy.response.dates) %within% x), "1", "0")))))
-subsidy.china.usa.yes.12m = as.numeric(unlist(lapply(usa.table$X12m.interval, FUN = function(x)(ifelse(any(ymd(china.us.subsidy.response.dates) %within% x), "1", "0")))))
-subsidy.china.usa.yes.24m = as.numeric(unlist(lapply(usa.table$X24m.interval, FUN = function(x)(ifelse(any(ymd(china.us.subsidy.response.dates) %within% x), "1", "0")))))
+##USA with retaliation China
 
-#EU
-subsidy.eu.usa.yes.6m = as.numeric(unlist(lapply(usa.table$X6m.interval, FUN = function(x)(ifelse(any(ymd(eu.usa.subsidy.response.dates) %within% x), "1", "0")))))
-subsidy.eu.usa.yes.12m = as.numeric(unlist(lapply(usa.table$X12m.interval, FUN = function(x)(ifelse(any(ymd(eu.usa.subsidy.response.dates) %within% x), "1", "0")))))
-subsidy.eu.usa.yes.24m = as.numeric(unlist(lapply(usa.table$X24m.interval, FUN = function(x)(ifelse(any(ymd(eu.usa.subsidy.response.dates) %within% x), "1", "0")))))
+#6m
+for (i in 1:nrow(usa.table)){
+  possible.matches = china.us.subsidy.response.dates[china.us.subsidy.response.dates$date.announced %within% usa.table[i, "X6m.interval",],] #select by interval
+  possible.matches = possible.matches[possible.matches$affected.product%in% usa.table[i, "affected.product"],]
+  
+  if (nrow(possible.matches) > 0){
+    usa.table$subsidy.china.usa.yes.6m[i] = 1
+  }
+  else
+    usa.table$subsidy.china.usa.yes.6m[i] = 0
+}
 
-#make a table
-usa.table = cbind(usa.table, subsidy.china.usa.yes.6m, subsidy.china.usa.yes.12m, subsidy.china.usa.yes.24m, subsidy.eu.usa.yes.6m, subsidy.eu.usa.yes.12m, subsidy.eu.usa.yes.24m )
+#12m
+for (i in 1:nrow(usa.table)){
+  possible.matches = china.us.subsidy.response.dates[china.us.subsidy.response.dates$date.announced %within% usa.table[i, "X12m.interval",],] #select by interval
+  possible.matches = possible.matches[possible.matches$affected.product%in% usa.table[i, "affected.product"],]
+  
+  if (nrow(possible.matches) > 0){
+    usa.table$subsidy.china.usa.yes.12m[i] = 1
+  }
+  else
+    usa.table$subsidy.china.usa.yes.12m[i] = 0
+}
+
+#24m
+for (i in 1:nrow(usa.table)){
+  possible.matches = china.us.subsidy.response.dates[china.us.subsidy.response.dates$date.announced %within% usa.table[i, "X24m.interval",],] #select by interval
+  possible.matches = possible.matches[possible.matches$affected.product%in% usa.table[i, "affected.product"],]
+  
+  if (nrow(possible.matches) > 0){
+    usa.table$subsidy.china.usa.yes.24m[i] = 1
+  }
+  else
+    usa.table$subsidy.china.usa.yes.24m[i] = 0
+}
+
+##USA with retaliation EU
+
+#6m
+for (i in 1:nrow(usa.table)){
+  possible.matches = eu.usa.subsidy.response.dates[eu.usa.subsidy.response.dates$date.announced %within% usa.table[i, "X6m.interval",],] #select by interval
+  possible.matches = possible.matches[possible.matches$affected.product%in% usa.table[i, "affected.product"],]
+  
+  if (nrow(possible.matches) > 0){
+    usa.table$subsidy.eu.usa.yes.6m[i] = 1
+  }
+  else
+    usa.table$subsidy.eu.usa.yes.6m[i] = 0
+}
+
+#12m
+for (i in 1:nrow(usa.table)){
+  possible.matches = eu.usa.subsidy.response.dates[eu.usa.subsidy.response.dates$date.announced %within% usa.table[i, "X12m.interval",],] #select by interval
+  possible.matches = possible.matches[possible.matches$affected.product%in% usa.table[i, "affected.product"],]
+  
+  if (nrow(possible.matches) > 0){
+    usa.table$subsidy.eu.usa.yes.12m[i] = 1
+  }
+  else
+    usa.table$subsidy.eu.usa.yes.12m[i] = 0
+}
+
+#24m
+for (i in 1:nrow(usa.table)){
+  possible.matches = eu.usa.subsidy.response.dates[eu.usa.subsidy.response.dates$date.announced %within% usa.table[i, "X24m.interval",],] #select by interval
+  possible.matches = possible.matches[possible.matches$affected.product%in% usa.table[i, "affected.product"],]
+  
+  if (nrow(possible.matches) > 0){
+    usa.table$subsidy.eu.usa.yes.24m[i] = 1
+  }
+  else
+    usa.table$subsidy.eu.usa.yes.24m[i] = 0
+}
 
 
-###EU
-#we check if in the intervals between the time china announced a subsidy that hurt the US and 6/12/24 months the US also announced a subsidy that hurts china
-#USA
-subsidy.usa.eu.yes.6m = as.numeric(unlist(lapply(eu.table$X6m.interval, FUN = function(x)(ifelse(any(ymd(usa.eu.subsidy.response.dates) %within% x), "1", "0")))))
-subsidy.usa.eu.yes.12m = as.numeric(unlist(lapply(eu.table$X12m.interval, FUN = function(x)(ifelse(any(ymd(usa.eu.subsidy.response.dates) %within% x), "1", "0")))))
-subsidy.usa.eu.yes.24m = as.numeric(unlist(lapply(eu.table$X24m.interval, FUN = function(x)(ifelse(any(ymd(usa.eu.subsidy.response.dates) %within% x), "1", "0")))))
+##EU with retaliation USA
 
-#China
-subsidy.china.eu.yes.6m = as.numeric(unlist(lapply(eu.table$X6m.interval, FUN = function(x)(ifelse(any(ymd(china.eu.subsidy.response.dates) %within% x), "1", "0")))))
-subsidy.china.eu.yes.12m = as.numeric(unlist(lapply(eu.table$X12m.interval, FUN = function(x)(ifelse(any(ymd(china.eu.subsidy.response.dates) %within% x), "1", "0")))))
-subsidy.china.eu.yes.24m = as.numeric(unlist(lapply(eu.table$X24m.interval, FUN = function(x)(ifelse(any(ymd(china.eu.subsidy.response.dates) %within% x), "1", "0")))))
+#6m
+for (i in 1:nrow(eu.table)){
+  possible.matches = usa.eu.subsidy.response.dates[usa.eu.subsidy.response.dates$date.announced %within% eu.table[i, "X6m.interval",],] #select by interval
+  possible.matches = possible.matches[possible.matches$affected.product%in% eu.table[i, "affected.product"],]
+  
+  if (nrow(possible.matches) > 0){
+    eu.table$subsidy.usa.eu.yes.6m[i] = 1
+  }
+  else
+    eu.table$subsidy.usa.eu.yes.6m[i] = 0
+}
 
-#make a table
-eu.table = cbind(eu.table, subsidy.usa.eu.yes.6m, subsidy.usa.eu.yes.12m, subsidy.usa.eu.yes.24m, subsidy.china.eu.yes.6m, subsidy.china.eu.yes.12m, subsidy.china.eu.yes.24m )
+#12m
+for (i in 1:nrow(eu.table)){
+  possible.matches = usa.eu.subsidy.response.dates[usa.eu.subsidy.response.dates$date.announced %within% eu.table[i, "X12m.interval",],] #select by interval
+  possible.matches = possible.matches[possible.matches$affected.product%in% eu.table[i, "affected.product"],]
+  
+  if (nrow(possible.matches) > 0){
+    eu.table$subsidy.usa.eu.yes.12m[i] = 1
+  }
+  else
+    eu.table$subsidy.usa.eu.yes.12m[i] = 0
+}
 
+#24m
+for (i in 1:nrow(eu.table)){
+  possible.matches = usa.eu.subsidy.response.dates[usa.eu.subsidy.response.dates$date.announced %within% eu.table[i, "X24m.interval",],] #select by interval
+  possible.matches = possible.matches[possible.matches$affected.product%in% eu.table[i, "affected.product"],]
+  
+  if (nrow(possible.matches) > 0){
+    eu.table$subsidy.usa.eu.yes.24m[i] = 1
+  }
+  else
+    eu.table$subsidy.usa.eu.yes.24m[i] = 0
+}
+
+##EU with retaliation China
+
+#6m
+for (i in 1:nrow(eu.table)){
+  possible.matches = eu.china.subsidy.response.dates[eu.china.subsidy.response.dates$date.announced %within% eu.table[i, "X6m.interval",],] #select by interval
+  possible.matches = possible.matches[possible.matches$affected.product%in% eu.table[i, "affected.product"],]
+  
+  if (nrow(possible.matches) > 0){
+    eu.table$subsidy.china.eu.yes.6m[i] = 1
+  }
+  else
+    eu.table$subsidy.china.eu.yes.6m[i] = 0
+}
+
+#12m
+for (i in 1:nrow(eu.table)){
+  possible.matches = eu.china.subsidy.response.dates[eu.china.subsidy.response.dates$date.announced %within% eu.table[i, "X12m.interval",],] #select by interval
+  possible.matches = possible.matches[possible.matches$affected.product%in% eu.table[i, "affected.product"],]
+  
+  if (nrow(possible.matches) > 0){
+    eu.table$subsidy.china.eu.yes.12m[i] = 1
+  }
+  else
+    eu.table$subsidy.china.eu.yes.12m[i] = 0
+}
+
+#24m
+for (i in 1:nrow(eu.table)){
+  possible.matches = eu.china.subsidy.response.dates[eu.china.subsidy.response.dates$date.announced %within% eu.table[i, "X24m.interval",],] #select by interval
+  possible.matches = possible.matches[possible.matches$affected.product%in% eu.table[i, "affected.product"],]
+  
+  if (nrow(possible.matches) > 0){
+    eu.table$subsidy.china.eu.yes.24m[i] = 1
+  }
+  else
+    eu.table$subsidy.china.eu.yes.24m[i] = 0
+}
+
+
+
+####### old---------------------
+# ###china
+# #we check if in the intervals between the time china announced a subsidy that hurt the US and 6/12/24 months the US also announced a subsidy that hurts china
+# #USA
+# subsidy.usa.china.yes.6m = ifelse(as.numeric(unlist(lapply(china.table$X6m.interval, FUN = function(x)(ifelse(any(ymd(usa.china.subsidy.response.dates$date.announced) %within% x), "1", "0")))))
+#                                   
+#                                   
+# subsidy.usa.china.yes.12m = as.numeric(unlist(lapply(china.table$X12m.interval, FUN = function(x)(ifelse(any(ymd(usa.china.subsidy.response.dates) %within% x), "1", "0")))))
+# subsidy.usa.china.yes.24m = as.numeric(unlist(lapply(china.table$X24m.interval, FUN = function(x)(ifelse(any(ymd(usa.china.subsidy.response.dates) %within% x), "1", "0")))))
+# 
+# #EU
+# subsidy.eu.china.yes.6m = as.numeric(unlist(lapply(china.table$X6m.interval, FUN = function(x)(ifelse(any(ymd(eu.china.subsidy.response.dates) %within% x), "1", "0")))))
+# subsidy.eu.china.yes.12m = as.numeric(unlist(lapply(china.table$X12m.interval, FUN = function(x)(ifelse(any(ymd(eu.china.subsidy.response.dates) %within% x), "1", "0")))))
+# subsidy.eu.china.yes.24m = as.numeric(unlist(lapply(china.table$X24m.interval, FUN = function(x)(ifelse(any(ymd(eu.china.subsidy.response.dates) %within% x), "1", "0")))))
+# 
+# #make a table
+# china.table = cbind(china.table, subsidy.usa.china.yes.6m, subsidy.usa.china.yes.12m, subsidy.usa.china.yes.24m, subsidy.eu.china.yes.6m, subsidy.eu.china.yes.12m, subsidy.eu.china.yes.24m )
+# 
+# 
+# ###usa
+# #we check if in the intervals between the time china announced a subsidy that hurt the US and 6/12/24 months the US also announced a subsidy that hurts china
+# #China
+# subsidy.china.usa.yes.6m = as.numeric(unlist(lapply(usa.table$X6m.interval, FUN = function(x)(ifelse(any(ymd(china.us.subsidy.response.dates) %within% x), "1", "0")))))
+# subsidy.china.usa.yes.12m = as.numeric(unlist(lapply(usa.table$X12m.interval, FUN = function(x)(ifelse(any(ymd(china.us.subsidy.response.dates) %within% x), "1", "0")))))
+# subsidy.china.usa.yes.24m = as.numeric(unlist(lapply(usa.table$X24m.interval, FUN = function(x)(ifelse(any(ymd(china.us.subsidy.response.dates) %within% x), "1", "0")))))
+# 
+# #EU
+# subsidy.eu.usa.yes.6m = as.numeric(unlist(lapply(usa.table$X6m.interval, FUN = function(x)(ifelse(any(ymd(eu.usa.subsidy.response.dates) %within% x), "1", "0")))))
+# subsidy.eu.usa.yes.12m = as.numeric(unlist(lapply(usa.table$X12m.interval, FUN = function(x)(ifelse(any(ymd(eu.usa.subsidy.response.dates) %within% x), "1", "0")))))
+# subsidy.eu.usa.yes.24m = as.numeric(unlist(lapply(usa.table$X24m.interval, FUN = function(x)(ifelse(any(ymd(eu.usa.subsidy.response.dates) %within% x), "1", "0")))))
+# 
+# #make a table
+# usa.table = cbind(usa.table, subsidy.china.usa.yes.6m, subsidy.china.usa.yes.12m, subsidy.china.usa.yes.24m, subsidy.eu.usa.yes.6m, subsidy.eu.usa.yes.12m, subsidy.eu.usa.yes.24m )
+# 
+# 
+# ###EU
+# #we check if in the intervals between the time china announced a subsidy that hurt the US and 6/12/24 months the US also announced a subsidy that hurts china
+# #USA
+# subsidy.usa.eu.yes.6m = as.numeric(unlist(lapply(eu.table$X6m.interval, FUN = function(x)(ifelse(any(ymd(usa.eu.subsidy.response.dates) %within% x), "1", "0")))))
+# subsidy.usa.eu.yes.12m = as.numeric(unlist(lapply(eu.table$X12m.interval, FUN = function(x)(ifelse(any(ymd(usa.eu.subsidy.response.dates) %within% x), "1", "0")))))
+# subsidy.usa.eu.yes.24m = as.numeric(unlist(lapply(eu.table$X24m.interval, FUN = function(x)(ifelse(any(ymd(usa.eu.subsidy.response.dates) %within% x), "1", "0")))))
+# 
+# #China
+# subsidy.china.eu.yes.6m = as.numeric(unlist(lapply(eu.table$X6m.interval, FUN = function(x)(ifelse(any(ymd(china.eu.subsidy.response.dates) %within% x), "1", "0")))))
+# subsidy.china.eu.yes.12m = as.numeric(unlist(lapply(eu.table$X12m.interval, FUN = function(x)(ifelse(any(ymd(china.eu.subsidy.response.dates) %within% x), "1", "0")))))
+# subsidy.china.eu.yes.24m = as.numeric(unlist(lapply(eu.table$X24m.interval, FUN = function(x)(ifelse(any(ymd(china.eu.subsidy.response.dates) %within% x), "1", "0")))))
+# 
+# #make a table
+# eu.table = cbind(eu.table, subsidy.usa.eu.yes.6m, subsidy.usa.eu.yes.12m, subsidy.usa.eu.yes.24m, subsidy.china.eu.yes.6m, subsidy.china.eu.yes.12m, subsidy.china.eu.yes.24m )
+# 
 
 
 
@@ -380,6 +648,12 @@ eu.percentages.import.restriction = data.frame("region" = c("USA", "China"),
                                       "12 Months" = c(sum(eu.table$import.restriction.usa.eu.yes.12m)/nrow(eu.table), sum(eu.table$import.restriction.china.eu.yes.12m)/nrow(eu.table)),
                                       "24 Months" = c(sum(eu.table$import.restriction.usa.eu.yes.24m)/nrow(eu.table), sum(eu.table$import.restriction.china.eu.yes.24m)/nrow(eu.table))
 )
+
+
+
+
+
+
 
 
 ################################################################################
