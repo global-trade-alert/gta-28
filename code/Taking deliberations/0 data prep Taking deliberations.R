@@ -32,15 +32,17 @@ path = "0 dev/gta-28-sh/code/taking deliberations/"
 path.data = "0 dev/gta-28-sh/data/Taking deliberations/"
 
 
-
 juristictions = c("European Union2", "United States", "China")
 to.exclud = c("Botswana1", "Eswatini1", "Lesotho1", "Namibia1", "Kazakhstan3") #excluded since they would be double reports (e.g. Botswana is reported together with South Africa, but both Botswana and South Africa are listed seperately)
 years = as.character(c(2000:2020))
 
+
 eu = gtalibrary::country.names[country.names$is.eu, ]$name
 implementing.juristiction = c("United States of America", "China", eu)
 
-
+#parameters for 
+import.restrictions = int.mast.types$intervention.type[int.mast.types$is.at.the.border==1]
+subsidy.intervention.types <- subset(gtalibrary::int.mast.types, mast.subchapter.id %in% c("L","P7","P8","P9"))$intervention.type
 
 ################################################################################
 #1. Get data -------------------------------------------------------------------
@@ -130,6 +132,8 @@ gta_data_slicer(implementing.country = implementing.juristiction,
                 gta.evaluation = "Red"
 )
 
+
+
 #some cleaning
 data2 = master.sliced[master.sliced$affected.jurisdiction %in% implementing.juristiction, ] #only get right affecte juristictions
 data2$affected.jurisdiction = ifelse(data2$affected.jurisdiction %in% eu, "EU28", data2$affected.jurisdiction) #change EU member states to EU
@@ -138,6 +142,7 @@ data2 = data2 %>% select( - c("affected.sector", "affected.product", "a.un", "i.
   filter(!data2$implementing.jurisdiction == data2$affected.jurisdiction) #filter so we do not have multiple intervention doubled 
 data2 = unique(data2)
 length(data2$intervention.id[table(data2$intervention.id)>2]) #no more than 2 interventios per intervention id 
+
 
 
 
@@ -153,6 +158,7 @@ usa.eu.subsidy.response.dates = unique(data2[data2$implementing.jurisdiction == 
 #and for EU
 eu.china.subsidy.response.dates = unique(data2[data2$implementing.jurisdiction == "EU28"& (data2$affected.jurisdiction == 42), ]$date.announced)
 eu.usa.subsidy.response.dates = unique(data2[data2$implementing.jurisdiction == "EU28"& (data2$affected.jurisdiction == 221), ]$date.announced)
+
 
 
 
@@ -179,6 +185,7 @@ eu.table = data.frame("subsidy.dates" = eu.subsidy.dates,
 
 
 
+
 #check if in these intervals were subsidies of other countries
 
 
@@ -198,7 +205,6 @@ subsidy.eu.china.yes.24m = as.numeric(unlist(lapply(china.table$X24m.interval, F
 china.table = cbind(china.table, subsidy.usa.china.yes.6m, subsidy.usa.china.yes.12m, subsidy.usa.china.yes.24m, subsidy.eu.china.yes.6m, subsidy.eu.china.yes.12m, subsidy.eu.china.yes.24m )
 
 
-
 ###usa
 #we check if in the intervals between the time china announced a subsidy that hurt the US and 6/12/24 months the US also announced a subsidy that hurts china
 #China
@@ -215,8 +221,7 @@ subsidy.eu.usa.yes.24m = as.numeric(unlist(lapply(usa.table$X24m.interval, FUN =
 usa.table = cbind(usa.table, subsidy.china.usa.yes.6m, subsidy.china.usa.yes.12m, subsidy.china.usa.yes.24m, subsidy.eu.usa.yes.6m, subsidy.eu.usa.yes.12m, subsidy.eu.usa.yes.24m )
 
 
-
-###china
+###EU
 #we check if in the intervals between the time china announced a subsidy that hurt the US and 6/12/24 months the US also announced a subsidy that hurts china
 #USA
 subsidy.usa.eu.yes.6m = as.numeric(unlist(lapply(eu.table$X6m.interval, FUN = function(x)(ifelse(any(ymd(usa.eu.subsidy.response.dates) %within% x), "1", "0")))))
@@ -230,6 +235,153 @@ subsidy.china.eu.yes.24m = as.numeric(unlist(lapply(eu.table$X24m.interval, FUN 
 
 #make a table
 eu.table = cbind(eu.table, subsidy.usa.eu.yes.6m, subsidy.usa.eu.yes.12m, subsidy.usa.eu.yes.24m, subsidy.china.eu.yes.6m, subsidy.china.eu.yes.12m, subsidy.china.eu.yes.24m )
+
+
+
+
+
+#calculate percentages
+
+china.percentages.subsidies = data.frame("region" = c("USA", "EU"), 
+                               "6 Months" = c(sum(china.table$subsidy.usa.china.yes.6m)/nrow(china.table), sum(china.table$subsidy.eu.china.yes.6m)/nrow(china.table)),
+                               "12 Months" = c(sum(china.table$subsidy.usa.china.yes.12m)/nrow(china.table), sum(china.table$subsidy.eu.china.yes.12m)/nrow(china.table)),
+                               "24 Months" = c(sum(china.table$subsidy.usa.china.yes.24m)/nrow(china.table), sum(china.table$subsidy.eu.china.yes.24m)/nrow(china.table))
+                               )
+
+usa.percentages.subsidies = data.frame("region" = c("China", "EU"), 
+                                         "6 Months" = c(sum(usa.table$subsidy.china.usa.yes.6m)/nrow(usa.table), sum(usa.table$subsidy.eu.usa.yes.6m)/nrow(usa.table)),
+                                         "12 Months" = c(sum(usa.table$subsidy.china.usa.yes.12m)/nrow(usa.table), sum(usa.table$subsidy.eu.usa.yes.12m)/nrow(usa.table)),
+                                         "24 Months" = c(sum(usa.table$subsidy.china.usa.yes.24m)/nrow(usa.table), sum(usa.table$subsidy.eu.usa.yes.24m)/nrow(usa.table))
+)
+
+eu.percentages.subsidies = data.frame("region" = c("USA", "China"), 
+                                         "6 Months" = c(sum(eu.table$subsidy.usa.eu.yes.6m)/nrow(eu.table), sum(eu.table$subsidy.china.eu.yes.6m)/nrow(eu.table)),
+                                         "12 Months" = c(sum(eu.table$subsidy.usa.eu.yes.12m)/nrow(eu.table), sum(eu.table$subsidy.china.eu.yes.12m)/nrow(eu.table)),
+                                         "24 Months" = c(sum(eu.table$subsidy.usa.eu.yes.24m)/nrow(eu.table), sum(eu.table$subsidy.china.eu.yes.24m)/nrow(eu.table))
+)
+
+
+
+
+
+
+
+
+#2.2.3 get all harmful Import restrictions for the relevant countries and calculate if they are inacted after the mentioned timeframes
+
+gta_data_slicer(implementing.country = implementing.juristiction, 
+                keep.implementer = T, 
+                intervention.types = subsidy.intervention.types,
+                keep.type = T, 
+                affected.country = implementing.juristiction, 
+                keep.affected = T, 
+                gta.evaluation = "Red"
+)
+
+
+
+
+#some cleaning
+data2 = master.sliced[master.sliced$affected.jurisdiction %in% implementing.juristiction, ] #only get right affecte juristictions
+data2$affected.jurisdiction = ifelse(data2$affected.jurisdiction %in% eu, "EU28", data2$affected.jurisdiction) #change EU member states to EU
+data2$implementing.jurisdiction = ifelse(data2$implementing.jurisdiction %in% eu, "EU28", data2$implementing.jurisdiction)
+data2 = data2 %>% select( - c("affected.sector", "affected.product", "a.un", "i.un")) %>%
+  filter(!data2$implementing.jurisdiction == data2$affected.jurisdiction) #filter so we do not have multiple intervention doubled 
+data2 = unique(data2)
+length(data2$intervention.id[table(data2$intervention.id)>2]) #no more than 2 interventios per intervention id 
+
+
+
+
+
+#get all the dates on which china implemented a subsidy that hurts the US and for EU
+china.us.import.restriction.response.dates = unique(data2[data2$implementing.jurisdiction == 42& (data2$affected.jurisdiction == 221), ]$date.announced)
+china.eu.import.restriction.response.dates = unique(data2[data2$implementing.jurisdiction == 42& (data2$affected.jurisdiction == "EU28"), ]$date.announced)
+
+#same for the US
+usa.china.import.restriction.response.dates = unique(data2[data2$implementing.jurisdiction == 221 & (data2$affected.jurisdiction == 42), ]$date.announced)
+usa.eu.import.restriction.response.dates = unique(data2[data2$implementing.jurisdiction == 221 & (data2$affected.jurisdiction == "EU28"), ]$date.announced)
+
+#and for EU
+eu.china.import.restriction.response.dates = unique(data2[data2$implementing.jurisdiction == "EU28"& (data2$affected.jurisdiction == 42), ]$date.announced)
+eu.import.restriction.response.dates = unique(data2[data2$implementing.jurisdiction == "EU28"& (data2$affected.jurisdiction == 221), ]$date.announced)
+
+
+
+#check if in these intervals were subsidies of other countries
+
+
+###china
+#we check if in the intervals between the time china announced a subsidy that hurt the US and 6/12/24 months the US also announced a subsidy that hurts china
+#USA
+import.restriction.usa.china.yes.6m = as.numeric(unlist(lapply(china.table$X6m.interval, FUN = function(x)(ifelse(any(ymd(usa.china.import.restriction.response.dates) %within% x), "1", "0")))))
+import.restriction.usa.china.yes.12m = as.numeric(unlist(lapply(china.table$X12m.interval, FUN = function(x)(ifelse(any(ymd(usa.china.import.restriction.response.dates) %within% x), "1", "0")))))
+import.restriction.usa.china.yes.24m = as.numeric(unlist(lapply(china.table$X24m.interval, FUN = function(x)(ifelse(any(ymd(usa.china.import.restriction.response.dates) %within% x), "1", "0")))))
+
+#EU
+import.restriction.eu.china.yes.6m = as.numeric(unlist(lapply(china.table$X6m.interval, FUN = function(x)(ifelse(any(ymd(eu.china.import.restriction.response.dates) %within% x), "1", "0")))))
+import.restriction.eu.china.yes.12m = as.numeric(unlist(lapply(china.table$X12m.interval, FUN = function(x)(ifelse(any(ymd(eu.china.import.restriction.response.dates) %within% x), "1", "0")))))
+import.restriction.eu.china.yes.24m = as.numeric(unlist(lapply(china.table$X24m.interval, FUN = function(x)(ifelse(any(ymd(eu.china.import.restriction.response.dates) %within% x), "1", "0")))))
+
+#make a table
+china.table = cbind(china.table, import.restriction.usa.china.yes.6m, import.restriction.usa.china.yes.12m, import.restriction.usa.china.yes.24m, import.restriction.eu.china.yes.6m, import.restriction.eu.china.yes.12m, import.restriction.eu.china.yes.24m )
+
+
+###usa
+#we check if in the intervals between the time china announced a import.restriction that hurt the US and 6/12/24 months the US also announced a import.restriction that hurts china
+#China
+import.restriction.china.usa.yes.6m = as.numeric(unlist(lapply(usa.table$X6m.interval, FUN = function(x)(ifelse(any(ymd(china.us.import.restriction.response.dates) %within% x), "1", "0")))))
+import.restriction.china.usa.yes.12m = as.numeric(unlist(lapply(usa.table$X12m.interval, FUN = function(x)(ifelse(any(ymd(china.us.import.restriction.response.dates) %within% x), "1", "0")))))
+import.restriction.china.usa.yes.24m = as.numeric(unlist(lapply(usa.table$X24m.interval, FUN = function(x)(ifelse(any(ymd(china.us.import.restriction.response.dates) %within% x), "1", "0")))))
+
+#EU
+import.restriction.eu.usa.yes.6m = as.numeric(unlist(lapply(usa.table$X6m.interval, FUN = function(x)(ifelse(any(ymd(eu.usa.import.restriction.response.dates) %within% x), "1", "0")))))
+import.restriction.eu.usa.yes.12m = as.numeric(unlist(lapply(usa.table$X12m.interval, FUN = function(x)(ifelse(any(ymd(eu.usa.import.restriction.response.dates) %within% x), "1", "0")))))
+import.restriction.eu.usa.yes.24m = as.numeric(unlist(lapply(usa.table$X24m.interval, FUN = function(x)(ifelse(any(ymd(eu.usa.import.restriction.response.dates) %within% x), "1", "0")))))
+
+#make a table
+usa.table = cbind(usa.table, import.restriction.china.usa.yes.6m, import.restriction.china.usa.yes.12m, import.restriction.china.usa.yes.24m, import.restriction.eu.usa.yes.6m, import.restriction.eu.usa.yes.12m, import.restriction.eu.usa.yes.24m )
+
+
+###EU
+#we check if in the intervals between the time china announced a import.restriction that hurt the US and 6/12/24 months the US also announced a import.restriction that hurts china
+#USA
+import.restriction.usa.eu.yes.6m = as.numeric(unlist(lapply(eu.table$X6m.interval, FUN = function(x)(ifelse(any(ymd(usa.eu.import.restriction.response.dates) %within% x), "1", "0")))))
+import.restriction.usa.eu.yes.12m = as.numeric(unlist(lapply(eu.table$X12m.interval, FUN = function(x)(ifelse(any(ymd(usa.eu.import.restriction.response.dates) %within% x), "1", "0")))))
+import.restriction.usa.eu.yes.24m = as.numeric(unlist(lapply(eu.table$X24m.interval, FUN = function(x)(ifelse(any(ymd(usa.eu.import.restriction.response.dates) %within% x), "1", "0")))))
+
+#China
+import.restriction.china.eu.yes.6m = as.numeric(unlist(lapply(eu.table$X6m.interval, FUN = function(x)(ifelse(any(ymd(china.eu.import.restriction.response.dates) %within% x), "1", "0")))))
+import.restriction.china.eu.yes.12m = as.numeric(unlist(lapply(eu.table$X12m.interval, FUN = function(x)(ifelse(any(ymd(china.eu.import.restriction.response.dates) %within% x), "1", "0")))))
+import.restriction.china.eu.yes.24m = as.numeric(unlist(lapply(eu.table$X24m.interval, FUN = function(x)(ifelse(any(ymd(china.eu.import.restriction.response.dates) %within% x), "1", "0")))))
+
+#make a table
+eu.table = cbind(eu.table, import.restriction.usa.eu.yes.6m, import.restriction.usa.eu.yes.12m, import.restriction.usa.eu.yes.24m, import.restriction.china.eu.yes.6m, import.restriction.china.eu.yes.12m, import.restriction.china.eu.yes.24m )
+
+
+
+
+
+#calculate percentages
+
+china.percentages.subsidies = data.frame("region" = c("USA", "EU"), 
+                                         "6 Months" = c(sum(china.table$import.restriction.usa.china.yes.6m)/nrow(china.table), sum(china.table$import.restriction.eu.china.yes.6m)/nrow(china.table)),
+                                         "12 Months" = c(sum(china.table$import.restriction.usa.china.yes.12m)/nrow(china.table), sum(china.table$import.restriction.eu.china.yes.12m)/nrow(china.table)),
+                                         "24 Months" = c(sum(china.table$import.restriction.usa.china.yes.24m)/nrow(china.table), sum(china.table$import.restriction.eu.china.yes.24m)/nrow(china.table))
+)
+
+usa.percentages.subsidies = data.frame("region" = c("China", "EU"), 
+                                       "6 Months" = c(sum(usa.table$import.restriction.china.usa.yes.6m)/nrow(usa.table), sum(usa.table$import.restriction.eu.usa.yes.6m)/nrow(usa.table)),
+                                       "12 Months" = c(sum(usa.table$import.restriction.china.usa.yes.12m)/nrow(usa.table), sum(usa.table$import.restriction.eu.usa.yes.12m)/nrow(usa.table)),
+                                       "24 Months" = c(sum(usa.table$import.restriction.china.usa.yes.24m)/nrow(usa.table), sum(usa.table$import.restriction.eu.usa.yes.24m)/nrow(usa.table))
+)
+
+eu.percentages.subsidies = data.frame("region" = c("USA", "China"), 
+                                      "6 Months" = c(sum(eu.table$import.restriction.usa.eu.yes.6m)/nrow(eu.table), sum(eu.table$import.restriction.china.eu.yes.6m)/nrow(eu.table)),
+                                      "12 Months" = c(sum(eu.table$import.restriction.usa.eu.yes.12m)/nrow(eu.table), sum(eu.table$import.restriction.china.eu.yes.12m)/nrow(eu.table)),
+                                      "24 Months" = c(sum(eu.table$import.restriction.usa.eu.yes.24m)/nrow(eu.table), sum(eu.table$import.restriction.china.eu.yes.24m)/nrow(eu.table))
+)
+
 
 ################################################################################
 #2.3. data for third chart ------------------------------------------------------
