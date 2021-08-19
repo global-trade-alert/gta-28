@@ -15,21 +15,9 @@ gta_setwd()
 
 
 data.path = "0 dev/gta-28-ad/data/Global assessment/data.Rdata"
-
+data.path2 = "0 dev/gta-28-ad/data/Global assessment/data master.Rdata"
 
 ########################## Figure 1: ############################### 
-
-# Please prepare a table with separate rows for China, EU28, the United States, and the total for all three jurisdictions. The columns of the table should report:
-# •	Number of implemented L inward policy changes #
-# •	Percentage of implemented L inward policy changes that are amber or red (harmful to trading partners) #
-# •	Number of implemented L outward  and P policy changes #
-# •	Percentage of implemented L outward and P policy changes that are amber or red (harmful to trading partners) #
-# •	Percentage of firm-specific policy interventions
-# •	Percentage of horizontal subsidy interventions
-# •	Percentage of subsidy changes in the agricultural sector
-# •	Percentage of subsidy changes in the manufacturing sector
-# •	Percentage of subsidy changes in the service sector  
-
 #Update: Two tables
 # (1) L inward
 # •	Number of implemented L inward policy changes #
@@ -67,27 +55,25 @@ master.sliced$implementing.jurisdiction = as.character(master.sliced$implementin
 master.sliced$implementing.jurisdiction[master.sliced$implementing.jurisdiction %in% eu.countries] <- "EU28"
 
 
-figure.1 = master.sliced%>% 
-  group_by(implementing.jurisdiction)%>% 
-  summarise(l.inward.changes = n()
-            #l.inward.harmful = length(filter(gta.evaluation=="Red"|gta.evaluation=="Amber"))/n()
-            )
+figure.1 = aggregate(intervention.id ~ implementing.jurisdiction, master.sliced, function(x) length(unique(x)))
 figure.1 = figure.1%>% adorn_totals("row")
+names(figure.1)[2] = "l.inward.changes"
+
 
 col.3 = master.sliced%>% 
-  group_by(implementing.jurisdiction)%>% 
-  filter(gta.evaluation=="Red"|gta.evaluation=="Amber")%>%
-  summarize(l.inward.harmful = n())
+  filter(gta.evaluation=="Red"|gta.evaluation=="Amber")
+col.3 = aggregate(intervention.id ~ implementing.jurisdiction, col.3, function(x) length(unique(x)))
 col.3 = col.3%>% adorn_totals("row")
+names(col.3)[2] = "l.inward.harmful"
 figure.1 = merge(figure.1,col.3, by = "implementing.jurisdiction")
 figure.1 = mutate(figure.1, l.inward.harmful.perc = l.inward.harmful/l.inward.changes*100)
 figure.1 = select(figure.1, -l.inward.harmful)
 
 col.4 = master.sliced%>% 
-  group_by(implementing.jurisdiction)%>% 
-  filter(eligible.firms=="firm-specific")%>%
-  summarize(firm.specific = n())
+  filter(eligible.firms=="firm-specific")
+col.4 = aggregate(intervention.id ~ implementing.jurisdiction, col.4, function(x) length(unique(x)))
 col.4 = col.4%>% adorn_totals("row")
+names(col.4)[2] = "firm.specific"
 figure.1 = merge(figure.1,col.4, by = "implementing.jurisdiction")
 figure.1 = mutate(figure.1, firm.specific.perc = firm.specific/l.inward.changes*100)
 figure.1 = select(figure.1, -firm.specific)
@@ -97,19 +83,19 @@ load("data/database replica/database replica - parts - base.Rdata")
 master.sliced = merge(master.sliced, gta_intervention[c(1,9)], by.x = "intervention.id", by.y = "intervention_id")
 
 col.5 = master.sliced%>% 
-  group_by(implementing.jurisdiction)%>% 
-  filter(is_horizontal_measure==1)%>%
-  summarize(horizontal = n())
+  filter(is_horizontal_measure==1)
+col.5 = aggregate(intervention.id ~ implementing.jurisdiction, col.5, function(x) length(unique(x)))
 col.5 = col.5%>% adorn_totals("row")
+names(col.5)[2] = "horizontal"
 figure.1 = merge(figure.1,col.5, by = "implementing.jurisdiction")
 figure.1 = mutate(figure.1, horizontal.perc = horizontal/l.inward.changes*100)
 figure.1 = select(figure.1, -horizontal)
 
 col.6 = master.sliced%>% 
-  group_by(implementing.jurisdiction)%>% 
-  filter(implementation.level=="national"|implementation.level=="supranational")%>%
-  summarize(implementation.level = n())
+  filter(implementation.level=="national"|implementation.level=="supranational")
+col.6 = aggregate(intervention.id ~ implementing.jurisdiction, col.6, function(x) length(unique(x)))
 col.6 = col.6%>% adorn_totals("row")
+names(col.6)[2] = "implementation.level"
 figure.1 = merge(figure.1,col.6, by = "implementing.jurisdiction")
 figure.1 = mutate(figure.1, implementation.level.perc = implementation.level/l.inward.changes*100)
 figure.1 = select(figure.1, -implementation.level)
@@ -129,6 +115,7 @@ master.sliced$services[grepl("(^(5|6|7|8|9))", master.sliced$affected.sector)] =
 master.sliced$services[!grepl("(^(5|6|7|8|9))", master.sliced$affected.sector)] = 0
 
 #adding the additional sector codes (if there are any)
+#about 10 cases were checked since this is a new function I was using and all seems correct. 
 master.sliced = master.sliced%>%
   mutate(additional.sectors = map_chr(str_extract_all(affected.sector, "(?<=, )(\\d)"), ~ str_c(.x, collapse=" ")))
 
@@ -136,29 +123,30 @@ master.sliced$agriculture[grepl("(0|2)", master.sliced$additional.sectors)] = 1
 master.sliced$manufacturing[grepl("(1|3|4)", master.sliced$additional.sectors)] = 1
 master.sliced$services[grepl("(5|6|7|8|9)", master.sliced$additional.sectors)] = 1
 
+
 col.7 = master.sliced%>% 
-  group_by(implementing.jurisdiction)%>% 
-  filter(agriculture==1)%>%
-  summarize(agriculture = n())
+  filter(agriculture==1)
+col.7 = aggregate(intervention.id ~ implementing.jurisdiction, col.7, function(x) length(unique(x)))
 col.7 = col.7%>% adorn_totals("row")
+names(col.7)[2] = "agriculture"
 figure.1 = merge(figure.1,col.7, by = "implementing.jurisdiction")
 figure.1 = mutate(figure.1, agriculture.perc = agriculture/l.inward.changes*100)
 figure.1 = select(figure.1, -agriculture)
 
 col.8 = master.sliced%>% 
-  group_by(implementing.jurisdiction)%>% 
-  filter(manufacturing==1)%>%
-  summarize(manufacturing = n())
+  filter(manufacturing==1)
+col.8 = aggregate(intervention.id ~ implementing.jurisdiction, col.8, function(x) length(unique(x)))
 col.8 = col.8%>% adorn_totals("row")
+names(col.8)[2] = "manufacturing"
 figure.1 = merge(figure.1,col.8, by = "implementing.jurisdiction")
 figure.1 = mutate(figure.1, manufacturing.perc = manufacturing/l.inward.changes*100)
 figure.1 = select(figure.1, -manufacturing)
 
 col.9 = master.sliced%>% 
-  group_by(implementing.jurisdiction)%>% 
-  filter(services==1)%>%
-  summarize(services = n())
+  filter(services==1)
+col.9 = aggregate(intervention.id ~ implementing.jurisdiction, col.9, function(x) length(unique(x)))
 col.9 = col.9%>% adorn_totals("row")
+names(col.9)[2] = "services"
 figure.1 = merge(figure.1,col.9, by = "implementing.jurisdiction")
 figure.1 = mutate(figure.1, services.perc = services/l.inward.changes*100)
 figure.1 = select(figure.1, -services)
@@ -169,6 +157,7 @@ figure.1 = figure.1[c(1,2,4,3),]
 
 
 ###########Second table########
+
 gta_data_slicer(implementing.country = c("China", "United States of America", eu.countries),
                 keep.implementer = T,
                 affected.flows = "outward subsidy",
@@ -178,26 +167,24 @@ master.p.outward = master.sliced
 master.sliced$implementing.jurisdiction = as.character(master.sliced$implementing.jurisdiction)
 master.sliced$implementing.jurisdiction[master.sliced$implementing.jurisdiction %in% eu.countries] <- "EU28"
 
-figure.2 = master.sliced%>% 
-  group_by(implementing.jurisdiction)%>% 
-  summarise(p.outward.changes = n())
+figure.2 = aggregate(intervention.id ~ implementing.jurisdiction, master.sliced, function(x) length(unique(x)))
 figure.2 = figure.2%>% adorn_totals("row")
+names(figure.2)[2] = "p.outward.changes"
 
 col.3 = master.sliced%>% 
-  group_by(implementing.jurisdiction)%>% 
-  filter(gta.evaluation=="Red"|gta.evaluation=="Amber")%>%
-  summarize(p.outward.harmful = n())
+  filter(gta.evaluation=="Red"|gta.evaluation=="Amber")
+col.3 = aggregate(intervention.id ~ implementing.jurisdiction, col.3, function(x) length(unique(x)))
 col.3 = col.3%>% adorn_totals("row")
+names(col.3)[2] = "p.outward.harmful"
 figure.2 = merge(figure.2,col.3, by = "implementing.jurisdiction")
 figure.2 = mutate(figure.2, p.outward.harmful.perc = p.outward.harmful/p.outward.changes*100)
 figure.2 = select(figure.2, -p.outward.harmful)
 
-
 col.4 = master.sliced%>% 
-  group_by(implementing.jurisdiction)%>% 
-  filter(eligible.firms=="firm-specific")%>%
-  summarize(firm.specific = n())
+  filter(eligible.firms=="firm-specific")
+col.4 = aggregate(intervention.id ~ implementing.jurisdiction, col.4, function(x) length(unique(x)))
 col.4 = col.4%>% adorn_totals("row")
+names(col.4)[2] = "firm.specific"
 figure.2 = merge(figure.2,col.4, by = "implementing.jurisdiction")
 figure.2 = mutate(figure.2, firm.specific.perc = firm.specific/p.outward.changes*100)
 figure.2 = select(figure.2, -firm.specific)
@@ -207,19 +194,19 @@ figure.2 = select(figure.2, -firm.specific)
 master.sliced = merge(master.sliced, gta_intervention[c(1,9)], by.x = "intervention.id", by.y = "intervention_id")
 
 col.5 = master.sliced%>% 
-  group_by(implementing.jurisdiction)%>% 
-  filter(is_horizontal_measure==1)%>%
-  summarize(horizontal = n())
+  filter(is_horizontal_measure==1)
+col.5 = aggregate(intervention.id ~ implementing.jurisdiction, col.5, function(x) length(unique(x)))
 col.5 = col.5%>% adorn_totals("row")
+names(col.5)[2] = "horizontal"
 figure.2 = merge(figure.2,col.5, by = "implementing.jurisdiction")
 figure.2 = mutate(figure.2, horizontal.perc = horizontal/p.outward.changes*100)
 figure.2 = select(figure.2, -horizontal)
 
 col.6 = master.sliced%>% 
-  group_by(implementing.jurisdiction)%>% 
-  filter(implementation.level=="national"|implementation.level=="supranational")%>%
-  summarize(implementation.level = n())
+  filter(implementation.level=="national"|implementation.level=="supranational")
+col.6 = aggregate(intervention.id ~ implementing.jurisdiction, col.6, function(x) length(unique(x)))
 col.6 = col.6%>% adorn_totals("row")
+names(col.6)[2] = "implementation.level"
 figure.2 = merge(figure.2,col.6, by = "implementing.jurisdiction")
 figure.2 = mutate(figure.2, implementation.level.perc = implementation.level/p.outward.changes*100)
 figure.2 = select(figure.2, -implementation.level)
@@ -247,94 +234,34 @@ master.sliced$manufacturing[grepl("(1|3|4)", master.sliced$additional.sectors)] 
 master.sliced$services[grepl("(5|6|7|8|9)", master.sliced$additional.sectors)] = 1
 
 col.7 = master.sliced%>% 
-  group_by(implementing.jurisdiction)%>% 
-  filter(agriculture==1)%>%
-  summarize(agriculture = n())
+  filter(agriculture==1)
+col.7 = aggregate(intervention.id ~ implementing.jurisdiction, col.7, function(x) length(unique(x)))
 col.7 = col.7%>% adorn_totals("row")
+names(col.7)[2] = "agriculture"
 figure.2 = merge(figure.2,col.7, by = "implementing.jurisdiction")
 figure.2 = mutate(figure.2, agriculture.perc = agriculture/p.outward.changes*100)
 figure.2 = select(figure.2, -agriculture)
 
 col.8 = master.sliced%>% 
-  group_by(implementing.jurisdiction)%>% 
-  filter(manufacturing==1)%>%
-  summarize(manufacturing = n())
+  filter(manufacturing==1)
+col.8 = aggregate(intervention.id ~ implementing.jurisdiction, col.8, function(x) length(unique(x)))
 col.8 = col.8%>% adorn_totals("row")
+names(col.8)[2] = "manufacturing"
 figure.2 = merge(figure.2,col.8, by = "implementing.jurisdiction")
 figure.2 = mutate(figure.2, manufacturing.perc = manufacturing/p.outward.changes*100)
 figure.2 = select(figure.2, -manufacturing)
 
 col.9 = master.sliced%>% 
-  group_by(implementing.jurisdiction)%>% 
-  filter(services==1)%>%
-  summarize(services = n())
+  filter(services==1)
+col.9 = aggregate(intervention.id ~ implementing.jurisdiction, col.9, function(x) length(unique(x)))
 col.9 = col.9%>% adorn_totals("row")
+names(col.9)[2] = "services"
 figure.2 = merge(figure.2,col.9, by = "implementing.jurisdiction")
 figure.2 = mutate(figure.2, services.perc = services/p.outward.changes*100)
 figure.2 = select(figure.2, -services)
 figure.2 = figure.2[c(1,2,4,3),]
 
 
-########################## Figure 2: ############################### 
-
-#Map of the number of times each country’s commercial interests have been harmed in 2019 by 
-#L inward policies implemented by China, EU28, and USA (together) in effect that year. 
-#Here the number of times a country’s commercial interests relates to the number of HS codes 
-#that it exports that are affected in 2019.
-
-harmed.l.inward = master.l.inward[!is.na(master.l.inward$affected.product),]%>%
-  filter(date.implemented>=as.Date("2019-01-01") & date.implemented<as.Date("2020-01-01") & (gta.evaluation=="Red"|gta.evaluation=="Amber"))%>%
-  separate_rows(affected.product, sep = ", ")%>%
-  group_by(affected.jurisdiction)%>% 
-  summarize(products = paste(unique(affected.product), collapse = ", "))
-
-harmed.l.inward = harmed.l.inward%>%
-  separate_rows(products, sep = ", ")
-
-harmed.l.inward = harmed.l.inward%>%
-  group_by(affected.jurisdiction)%>%
-  summarize(count = n())
-
-########################## Figure 3: ############################### 
-
-#Map of the number of times each country’s commercial interests have been HARMED in 2019 by 
-#L outward and P policies implemented by China, EU28, and USA (together) in effect that year. 
-#Here the number of times a country’s commercial interests relates to the number of HS codes 
-#that it exports that are affected in 2019.
-
-harmed.p.outward = master.p.outward[!is.na(master.p.outward$affected.product),]%>%
-  filter(date.implemented>=as.Date("2019-01-01") & date.implemented<as.Date("2020-01-01") & (gta.evaluation=="Red"|gta.evaluation=="Amber"))%>%
-  separate_rows(affected.product, sep = ", ")%>%
-  group_by(affected.jurisdiction)%>% 
-  summarize(products = paste(unique(affected.product), collapse = ", "))
-
-harmed.p.outward = harmed.p.outward%>%
-  separate_rows(products, sep = ", ")
-
-harmed.p.outward = harmed.p.outward%>%
-  group_by(affected.jurisdiction)%>%
-  summarize(count = n())
-
-########################## Figure 4: ############################### 
-
-#Map of the number of times each country’s commercial interests have BENEFITED in 2019 from 
-#L outward and P policies  implemented by China, EU28, and USA (together) in effect that year. 
-#Here the number of times a country’s commercial interests relates to the number of HS codes 
-#that it imports that are affected in 2019.
-########### see about this table... doesnt look very promising
-
-# benefited.p.outward = master.p.outward[!is.na(master.p.outward$affected.product),]%>%
-#   filter(date.implemented>=as.Date("2019-01-01") & date.implemented<as.Date("2020-01-01") & gta.evaluation=="Green")%>%
-#   separate_rows(affected.product, sep = ", ")%>%
-#   group_by(affected.jurisdiction)%>% 
-#   summarize(products = paste(unique(affected.product), collapse = ", "))
-# 
-# benefited.p.outward = benefited.p.outward%>%
-#   separate_rows(products, sep = ", ")
-# 
-# benefited.p.outward = benefited.p.outward%>%
-#   group_by(affected.jurisdiction)%>%
-#   summarize(count = n())
 
 #########################################################################################
 
@@ -342,5 +269,5 @@ save(figure.1, figure.2, harmed.l.inward, harmed.p.outward,
      #benefited.p.outward, 
      file = data.path)
 
-
+save(master.l.inward, master.p.outward, file = data.path2)
 
