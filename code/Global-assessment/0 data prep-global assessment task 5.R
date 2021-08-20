@@ -362,7 +362,7 @@ data = rbind(non.outwards.subsidy.calculated,outwards.subsidy.calculated )
 
 #pretty up
 
-data = data %>% select(-c("state.act.id", "eligible.firms","affected.flow", "currently.in.force", "i.atleastone.G20", "mast.id", "mast.chapter","prior.level", "new.level", "name" ))
+data = data %>% select(-c("state.act.id", "eligible.firms","currently.in.force", "i.atleastone.G20", "mast.id", "mast.chapter","prior.level", "new.level", "name" ))
 data$date.announced = as.Date(data$date.announced, origin = "1899-12-30")
 data$date.implemented = as.Date(data$date.implemented, origin = "1899-12-30")
 data$date.removed = as.Date(data$date.removed, origin = "1899-12-30")
