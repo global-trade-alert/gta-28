@@ -20,7 +20,7 @@ library(pool)
 library(RMariaDB)
 library(DBI)
 library(tidyverse)
-
+library(openxlsx)
 rm(list = ls())
 gta_setwd()
 
@@ -352,7 +352,7 @@ only.outward.subsidy[1, "trade.value.global"] = trade.coverage.estimates$`Trade 
 
 #load already calculated data
 non.outwards.subsidy.calculated = read.xlsx("0 dev/gta-28-sh/code/Global-assessment/non.outwards.subsidy.cases.xlsx")
-outwards.subsidy.calculated = read.xlsx("0 dev/gta-28-sh/data/outward.subsidy.cases.complete.xlsx")
+outwards.subsidy.calculated = read.xlsx("0 dev/gta-28-sh/data/Global assessment/outward.subsidy.cases.complete.xlsx")
 
 #adjust value (to billions)
 non.outwards.subsidy.calculated$trade.value.global = round(non.outwards.subsidy.calculated$trade.value.global/1000, 2)
@@ -372,3 +372,4 @@ data$date.published = as.Date(data$date.published, origin = "1899-12-30")
 data = data[!is.na(data$trade.value.global), ]
 data = data[data$trade.value.global > 10, ]
 
+write.xlsx(data,"0 dev/gta-28-sh/data/Global assessment/subsidy.interventions.to.be.checked.xlsx")
