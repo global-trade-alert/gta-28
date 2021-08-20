@@ -371,5 +371,9 @@ data$date.published = as.Date(data$date.published, origin = "1899-12-30")
 #SH: according to SE: "produce a list of subsidy interventions that our raw estimates suggest cover more than $10 billion in trade", so therefore leave NAs and less than 10 Bi0 out?
 data = data[!is.na(data$trade.value.global), ]
 data = data[data$trade.value.global > 10, ]
+data = data[order(data$trade.value.global, decreasing = T),]
+data = rename(data, trade.value.global.in.billions = trade.value.global)
+
+
 
 write.xlsx(data,"0 dev/gta-28-sh/data/Global assessment/subsidy.interventions.to.be.checked.xlsx")
