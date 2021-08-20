@@ -53,3 +53,4 @@ ggplot(data = data7, aes(x = Year, y = `Trade Share`, color= Category))+
   geom_line()+
   facet_wrap(vars(Goods,Country ))+
   gta_theme()
+
