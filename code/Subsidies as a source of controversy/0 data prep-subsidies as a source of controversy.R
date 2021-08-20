@@ -29,18 +29,16 @@ data.path = "0 dev/gta-28-sh/data/Subsidies as a source of controversy/"
 
 data1 <- read_excel("0 dev/gta-28-sh/data/Subsidies as a source of controversy/IMF.govt.subsidy.data.xlsx", skip = 1)
 
-
+#delete every second column (was unit) and standardize to billions 
 for (i in seq(ncol(data1),3, -2)) {
-  if(data1[1, i] == "M"){
+  if(any(na.omit(data1[, i]) == "M")){
    data1[, i-1] = data1[, i-1]/1000 #get from Millions to Billions
   }
-  if(data1[1, i] == "T"){
+  if(any(na.omit(data1[, i]) == "Tr")){
     data1[, i-1] = data1[, i-1]*1000 #get from trillions to billions
-    data1 = data1[, -i]
+    
   }
-  else
-    warning(paste0("New Unit detected, please check column ", i))
-  
+  data1 = data1[, -i]
 }
 
 
