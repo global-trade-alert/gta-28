@@ -17,6 +17,7 @@
 library(gtalibrary)
 library(tidyverse)
 library(readxl)
+library(IMFData)
 
 rm(list = ls())
 gta_setwd()
@@ -29,6 +30,11 @@ data.path = "0 dev/gta-28-sh/data/Subsidies as a source of controversy/"
 
 data1 <- read_excel("0 dev/gta-28-sh/data/Subsidies as a source of controversy/IMF.govt.subsidy.data.xlsx", skip = 1)
 
+
+
+################################################################################
+#1. clean data ------------------------------------------------------------------
+
 #delete every second column (was unit) and standardize to billions 
 for (i in seq(ncol(data1),3, -2)) {
   if(any(na.omit(data1[, i]) == "M")){
@@ -40,6 +46,40 @@ for (i in seq(ncol(data1),3, -2)) {
   }
   data1 = data1[, -i]
 }
+
+
+exchange.rates = gta_get_imf_data(start.date="2000-01-01",
+                             end.date="2021-01-01",
+                             frequency="A",
+                             series="fx",
+                             countries="all")
+
+
+data1 = data.frame(t(data1))
+data1 = rownames_to_column(data1)
+data1[1, 1] = "Countries"
+colnames(data1) = as.character(data1[1, ])
+data1 = data1[-1, ]
+
+
+#change country names to fit GTA 
+data.known = data1[ data1$Countries %in% countries$name, ]
+data.unknow = data1[!data1$Countries %in% data.known$Countries,]
+
+data.unknow[data.unknow$Countries == "Croatia, Republic of","Countries"] = "Croatia"
+data.unknow[data.unknow$Countries == "Czech Republic","Countries"] = "Croatia"
+data.unknow[data.unknow$Countries == "Estonia, Republic of","Countries"] = "Estonia"
+data.unknow[data.unknow$Countries == "Republic of Latvia","Countries"] = "Latvia"
+data.unknow[data.unknow$Countries == "Republic of Lithuania","Countries"] = "Lithuania"
+data.unknow[data.unknow$Countries == "Netherlands, The","Countries"] = "Netherlands"
+data.unknow[data.unknow$Countries == "Poland, Republic of","Countries"] = "Poland"
+data.unknow[data.unknow$Countries == "Russian Federation","Countries"] = "Russia"
+data.unknow[data.unknow$Countries == "Slovak Republic","Countries"] = "Slovakia"
+data.unknow[data.unknow$Countries == "Slovenia, Republic of","Countries"] = "Slovenia"
+data.unknow[data.unknow$Countries== "United States","Countries"] = "United States of America"
+
+data1 = rbind(data.known, data.unknow)
+exchange.rates = pivot_wider(exchange.rates,names_from = "date", values_from  = "lcu.per.usd" )
 
 
 
