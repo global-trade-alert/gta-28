@@ -41,7 +41,7 @@ data7$Year = as.numeric(data7$Year)
 #SH: SE suggests plotting everything on a single graph, I would split it, otherwise really crowded, what do you think?
 
 #6
-ggplot(data = data6, aes(x = Year, y = `Trade Share`, color= Category))+
+figure.6 = ggplot(data = data6, aes(x = Year, y = `Trade Share`, color= Category))+
   geom_line()+
   facet_wrap(vars(Country))+
   gta_theme()
@@ -49,7 +49,26 @@ ggplot(data = data6, aes(x = Year, y = `Trade Share`, color= Category))+
 
 
 #7
-ggplot(data = data7, aes(x = Year, y = `Trade Share`, color= Category))+
+figure.7 = ggplot(data = data7, aes(x = Year, y = `Trade Share`, color= Category))+
   geom_line()+
   facet_wrap(vars(Goods,Country ))+
   gta_theme()
+
+
+gta_plot_saver(figure.6, 
+               path = data.path, 
+               name= "Chapter.4.Figure.6", 
+               png = T,
+               width = 30
+               )
+
+gta_plot_saver(figure.7, 
+               path = data.path, 
+               name= "Chapter.4.Figure.7", 
+               png = T,
+               width = 30
+               )  
+  
+  
+write.xlsx(data6, paste0(data.path, "figure.6.xlsx"))  
+write.xlsx(data7, paste0(data.path, "figure.7.xlsx"))  

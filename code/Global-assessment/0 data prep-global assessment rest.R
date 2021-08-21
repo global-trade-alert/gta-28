@@ -14,18 +14,27 @@ rm(list = ls())
 gta_setwd()
 
 #parameters
+
+#paths
 data.path = "0 dev/gta-28-sh/data/Global assessment/"
 
 
+#define relevant intervention types
 subsidy.intervention.types <- subset(gtalibrary::int.mast.types, mast.subchapter.id %in% c("L","P7","P8","P9"))$intervention.type
+subsidy.intervention.types = subsidy.intervention.types[!subsidy.intervention.types == "Export-related non-tariff measure, nes"]
 affects.domestic.markets = subset(gtalibrary::int.mast.types, mast.subchapter.id %in% c("L"))$intervention.type
 affects.foreign.markets = subset(gtalibrary::int.mast.types, mast.subchapter.id %in% c("P7","P8","P9"))$intervention.type
+affects.foreign.markets = affects.foreign.markets[!affects.foreign.markets == "Export-related non-tariff measure, nes"]
 relevant.intervention.types = list("All subsidy types" = subsidy.intervention.types, "Affects competition in domestic markets" = affects.domestic.markets, "Affects competition in foreign markets" = affects.foreign.markets)
 
+
+#define relevant juristictions
 eu.countries = gtalibrary::country.names[country.names$is.eu == 1, "name"]
 relevant.juristictions = list("EU" = eu.countries, "USA" = "United States of America", "China" = "China")
 
 
+#inclue unpublished interventions?
+include.unpublished = F
 
 
 #get different goods types
@@ -38,7 +47,6 @@ relevant.goods = list("Only Agricultural" = cpc.goods.codes.agricultural, "Not A
 
 ################################################################################
 #1. get data -------------------------------------------------------------------
-
 
 
 #Task 6 ------------------------------------------------------------------------
@@ -77,13 +85,14 @@ for(i in 1:length(relevant.juristictions)){
     line = line + 1 
     
     gta_trade_coverage(
-      gta.evaluation = "Red", 
+      gta.evaluation = c("Red","amber") ,
       cpc.sectors = cpc.goods.codes, 
       keep.cpc = T, 
       implementers = relevant.juristictions[[i]], 
       keep.implementer = T, 
       intervention.types = relevant.intervention.types[[y]], 
-      keep.type = T
+      keep.type = T, 
+      add.unpublished = include.unpublished
     )
     
     data6 = rbind(data6, cbind("Country" = names(relevant.juristictions)[i],
@@ -138,13 +147,14 @@ for(i in 1:length(relevant.juristictions)) {
       line = line + 1
       
       gta_trade_coverage(
-        gta.evaluation = "Red",
+        gta.evaluation = c("Red","amber"),
         cpc.sectors = relevant.goods[[z]],
         keep.cpc = T,
         implementers = relevant.juristictions[[i]],
         keep.implementer = T,
         intervention.types = relevant.intervention.types[[y]],
-        keep.type = T
+        keep.type = T, 
+        add.unpublished = include.unpublished
       )
       
       
@@ -164,7 +174,7 @@ for(i in 1:length(relevant.juristictions)) {
   }
   
 }
-#delete unnecesary NA row
+#delete unnecessary NA row
 data7 = data7[2:nrow(data7),]
 
 ################################################################################

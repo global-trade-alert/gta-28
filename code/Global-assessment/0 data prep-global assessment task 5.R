@@ -24,15 +24,19 @@ library(openxlsx)
 rm(list = ls())
 gta_setwd()
 
-#variables
 
 #implementing countries
 countries = gtalibrary::country.names
 eu.countries = countries[countries$is.eu == 1, "name"]
 relevant.juristictions = c(eu.countries, "United States of America", "China")
+
 max.intervention.value = 100000000 #absolute
 min.trade.share.value = 10000 #in Millions
+
+#define relevant intervention types
 subsidy.intervention.types <- subset(gtalibrary::int.mast.types, mast.subchapter.id %in% c("L","P7","P8","P9"))$intervention.type
+subsidy.intervention.types = subsidy.intervention.types[subsidy.intervention.types != "Export-related non-tariff measure, nes"]
+
 
 #already checked cases which are to be excluded
 load(file = "0 report production/GTA 25/prep pre report/jumbo.data.Rdata")
@@ -317,34 +321,40 @@ gta_trade_coverage(intervention.ids = 90883,
                    trade.statistic = "value")
 trade.coverage.estimates$`Trade coverage estimate for 2019`[1] = "NA"
 
-#run first row because lopps refers to row i-1
-
+#run first row because loop refers to row i-1
 gta_trade_coverage(intervention.ids = only.outward.subsidy[1, "intervention.id"], 
                    keep.interventions = T, 
                    trade.statistic = "value")
 trade.coverage.estimates$`Trade coverage estimate for 2019`[1] = "NA"
 only.outward.subsidy[1, "trade.value.global"] = trade.coverage.estimates$`Trade coverage estimate for 2019`[1]
 
-#loop through all interventions and calculate trade coverage, DO NOT RUN, takes 20h...
-# start = Sys.time()
-# for(i in 2:nrow(only.outward.subsidy)){
-#   
-#   gta_trade_coverage(intervention.ids = only.outward.subsidy[i, "intervention.id"], 
-#                      keep.interventions = T, 
-#                      trade.statistic = "value")
-#   if (trade.coverage.estimates$`Trade coverage estimate for 2019`[1] == only.outward.subsidy[i -1, "trade.value.global"]){
-#     trade.coverage.estimates$`Trade coverage estimate for 2019`[1] = "NA"
-#   }
-#   only.outward.subsidy[i, "trade.value.global"] = trade.coverage.estimates$`Trade coverage estimate for 2019`[1]
-#   
-# }
-# end = Sys.time()
+#loop through all interventions and calculate trade coverage, 
+#DO NOT RUN, takes 20h...
+run.subsidy.calc = F
 
+
+if(run.subsidy.calc) {
+  
+  start = Sys.time()
+  for (i in 2:nrow(only.outward.subsidy)) {
+    gta_trade_coverage(
+      intervention.ids = only.outward.subsidy[i, "intervention.id"],
+      keep.interventions = T,
+      trade.statistic = "value"
+    )
+    if (trade.coverage.estimates$`Trade coverage estimate for 2019`[1] == only.outward.subsidy[i -
+                                                                                               1, "trade.value.global"]) {
+      trade.coverage.estimates$`Trade coverage estimate for 2019`[1] = "NA"
+    }
+    only.outward.subsidy[i, "trade.value.global"] = trade.coverage.estimates$`Trade coverage estimate for 2019`[1]
+    
+  }
+  end = Sys.time()
+  openxlsx::write.xlsx(only.outward.subsidy, "0 dev/gta-28-sh/code/Global-assessment/outwards.subsidy.cases.xlsx")
+}
 
 
 #only.outward.subsidy$trade.value.global = round(only.outward.subsidy$trade.value.global/1000000, 2) #format the same way as in 3.1
-# 
-# openxlsx::write.xlsx(only.outward.subsidy, "0 dev/gta-28-sh/code/Global-assessment/outwards.subsidy.cases.xlsx")
 # openxlsx::write.xlsx(your.data, "0 dev/gta-28-sh/code/Global-assessment/non.outwards.subsidy.cases.xlsx")
 
 ################################################################################
@@ -361,19 +371,20 @@ outwards.subsidy.calculated$trade.value.global = round(as.numeric(outwards.subsi
 data = rbind(non.outwards.subsidy.calculated,outwards.subsidy.calculated )
 
 #pretty up
-
 data = data %>% select(-c("state.act.id", "eligible.firms","currently.in.force", "i.atleastone.G20", "mast.id", "mast.chapter","prior.level", "new.level", "name" ))
 data$date.announced = as.Date(data$date.announced, origin = "1899-12-30")
 data$date.implemented = as.Date(data$date.implemented, origin = "1899-12-30")
 data$date.removed = as.Date(data$date.removed, origin = "1899-12-30")
 data$date.published = as.Date(data$date.published, origin = "1899-12-30")
 
-#SH: according to SE: "produce a list of subsidy interventions that our raw estimates suggest cover more than $10 billion in trade", so therefore leave NAs and less than 10 Bi0 out?
+#SH: according to SE: "produce a list of subsidy interventions that our raw estimates suggest cover more than $10 billion in trade", so therefore leave NAs and less than 10 Bio out
 data = data[!is.na(data$trade.value.global), ]
 data = data[data$trade.value.global > 10, ]
 data = data[order(data$trade.value.global, decreasing = T),]
 data = rename(data, trade.value.global.in.billions = trade.value.global)
 
 
+################################################################################
+#5. save data -------------------------------------------------------------------
 
 write.xlsx(data,"0 dev/gta-28-sh/data/Global assessment/subsidy.interventions.to.be.checked.xlsx")
