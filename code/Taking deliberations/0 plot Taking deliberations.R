@@ -6,7 +6,7 @@
 #Author: Silvan
 #Date: 17.8.2021
 #Supervisor Piotr
-install.packages("gt")
+
 library(ggplot2)
 library(tidyverse)
 library(gtalibrary)
@@ -46,8 +46,9 @@ is.na(data2) = NULL
 
 
 #3.
-data3 = gather(data3, key = "kind.of.notification", value = "numbers", 2:4 ) #6:ncol(data3)
+data3.1 = gather(data3, key = "kind.of.notification", value = "percentage", 6:ncol(data3) ) #
 
+data3.2 = gather(data3[, 1:4], key = "kind.of.notification", value = "number", 2:4 ) #
 
 
 
@@ -78,12 +79,18 @@ table.2
 
 
 #3. 
-ggplot(data3, aes(x = as.factor(year), y = percentage, fill = kind.of.notification))+ 
+ggplot(data3.1, aes(x = as.factor(year), y = percentage, fill = kind.of.notification))+ 
   geom_col()+
   geom_text(aes(label = percentage), size = 3, position = position_stack(vjust = 0.5))
 
 
+data3.2[data3.2$kind.of.notification == "no.notification", "number" ] = data3.2[data3.2$kind.of.notification == "no.notification", "number" ] *-1
+data3.2[data3.2$kind.of.notification == "nil.notification", "number" ] = data3.2[data3.2$kind.of.notification == "nil.notification", "number" ] *-1
 
+data3.2 = unique(data3.2)
 
+ggplot(data3.2, aes(x = as.factor(year), y = number, fill = kind.of.notification))+ 
+  geom_col()+
+  geom_text(aes(label = number), size = 3, position = position_stack(vjust = 0.5))
 
 
