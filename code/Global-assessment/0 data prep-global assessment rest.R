@@ -43,7 +43,8 @@ cpc.goods.codes.agricultural = gtalibrary::cpc.names[cpc.names$cpc <100 & cpc.na
 cpc.goods.codes.not.agricultural = gtalibrary::cpc.names[cpc.names$cpc >= 100 & cpc.names$cpc <500 & cpc.names$cpc.digit.level == 3, ]$cpc
 relevant.goods = list("Only Agricultural" = cpc.goods.codes.agricultural, "Not Agricultural" = cpc.goods.codes.not.agricultural)
 
-
+#relevant years
+years.to.include = c(2009, 2020)
 
 ################################################################################
 #1. get data -------------------------------------------------------------------
@@ -92,7 +93,8 @@ for(i in 1:length(relevant.juristictions)){
       keep.implementer = T, 
       intervention.types = relevant.intervention.types[[y]], 
       keep.type = T, 
-      add.unpublished = include.unpublished
+      add.unpublished = include.unpublished, 
+      coverage.period = years.to.include
     )
     
     data6 = rbind(data6, cbind("Country" = names(relevant.juristictions)[i],
@@ -154,7 +156,8 @@ for(i in 1:length(relevant.juristictions)) {
         keep.implementer = T,
         intervention.types = relevant.intervention.types[[y]],
         keep.type = T, 
-        add.unpublished = include.unpublished
+        add.unpublished = include.unpublished, 
+        coverage.period = years.to.include
       )
       
       
