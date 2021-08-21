@@ -85,7 +85,7 @@ for(i in 1:length(relevant.juristictions)){
     line = line + 1 
     
     gta_trade_coverage(
-      gta.evaluation = c("Red","amber") ,
+      gta.evaluation = c("Red","Amber") ,
       cpc.sectors = cpc.goods.codes, 
       keep.cpc = T, 
       implementers = relevant.juristictions[[i]], 
@@ -147,7 +147,7 @@ for(i in 1:length(relevant.juristictions)) {
       line = line + 1
       
       gta_trade_coverage(
-        gta.evaluation = c("Red","amber"),
+        gta.evaluation = c("Red","Amber"),
         cpc.sectors = relevant.goods[[z]],
         keep.cpc = T,
         implementers = relevant.juristictions[[i]],
