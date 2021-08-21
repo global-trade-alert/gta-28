@@ -32,14 +32,16 @@ gta_setwd()
 path = "0 dev/gta-28-sh/code/taking deliberations/"
 path.data = "0 dev/gta-28-sh/data/Taking deliberations/"
 
-
+#relevant juristictopms
 juristictions = c("European Union2", "United States", "China")
 to.exclud = c("Botswana1", "Eswatini1", "Lesotho1", "Namibia1", "Kazakhstan3") #excluded since they would be double reports (e.g. Botswana is reported together with South Africa, but both Botswana and South Africa are listed seperately)
 years = as.character(c(2000:2020))
-
-
 eu = gtalibrary::country.names[country.names$is.eu, ]$name
 implementing.juristiction = c("United States of America", "China", eu)
+
+
+#include unpublished
+include.unpublished = F
 
 #parameters for 
 import.restrictions = int.mast.types$intervention.type[int.mast.types$is.at.the.border==1]
@@ -81,7 +83,8 @@ gta_data_slicer(implementing.country = implementing.juristiction,
                 keep.implementer = T, 
                 announcement.period = c("2009-01-01", NA), 
                 intervention.types = "Anti-subsidy", 
-                keep.type = T
+                keep.type = T, 
+                add.unpublished = include.unpublished
                  
 )
 
@@ -99,7 +102,8 @@ gta_data_slicer(implementing.country = implementing.juristiction,
                 mast.chapters = "L", 
                 keep.mast = T, 
                 affected.country = implementing.juristiction, 
-                keep.affected = T
+                keep.affected = T, 
+                add.unpublished = include.unpublished
                 
 )
 
@@ -146,7 +150,7 @@ for (a in different.intervention.type.lists) {
     keep.type = T,
     affected.country = implementing.juristiction,
     keep.affected = T,
-    gta.evaluation = "Red"
+    gta.evaluation = c("Red", "Amber")
   )
   
   
@@ -274,7 +278,7 @@ for (a in different.intervention.type.lists) {
   #6m
   for (i in 1:nrow(china.table)) {
     possible.matches = usa.china.subsidy.response.dates[usa.china.subsidy.response.dates$date.announced %within% china.table[i, "X6m.interval", ], ] #select by interval
-    possible.matches = possible.matches[possible.matches$affected.product %in% china.table[i, "affected.product"], ]
+    possible.matches = possible.matches[possible.matches$affected.product %in% china.table[i, "affected.product"], ] #select by product
     
     if (nrow(possible.matches) > 0) {
       china.table$subsidy.usa.china.yes.6m[i] = 1
@@ -556,10 +560,8 @@ for (a in different.intervention.type.lists) {
   
   
   assign(paste0(a, ".", "eu.percentages"), eu.percentages.subsidies)
-  assign(paste0(a, ".", "usa.percentages"),
-         usa.percentages.subsidies)
-  assign(paste0(a, ".", "china.percentages"),
-         china.percentages.subsidies)
+  assign(paste0(a, ".", "usa.percentages"), usa.percentages.subsidies)
+  assign(paste0(a, ".", "china.percentages"), china.percentages.subsidies)
   
   
 
