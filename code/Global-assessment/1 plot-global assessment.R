@@ -25,6 +25,7 @@ colnames(data6) = c("Country","Category", 2009:2021)
 data6 = pivot_longer(names_to = "Year", values_to = "Trade Share", data6, cols = 3:ncol(data6))
 data6$`Trade Share` = round(data6$`Trade Share`, 3)
 data6$Year = as.numeric(data6$Year)
+data6 = data6[data6$Year != 2021, ]
 
 
 #7
@@ -33,7 +34,7 @@ colnames(data7) = c("Country","Category", "Goods", 2009:2021)
 data7 = pivot_longer(names_to = "Year", values_to = "Trade Share", data7, cols = 4:ncol(data7))
 data7$`Trade Share` = round(data7$`Trade Share`, 3)
 data7$Year = as.numeric(data7$Year)
-
+data7 = data7[data7$Year != 2021, ]
 
 ################################################################################
 #3. plot data ------------------------------------------------------------------
@@ -44,6 +45,7 @@ data7$Year = as.numeric(data7$Year)
 figure.6 = ggplot(data = data6, aes(x = Year, y = `Trade Share`, color= Category))+
   geom_line()+
   facet_wrap(vars(Country))+
+  ylab("Share of world goods trade")+
   gta_theme()
 
 
@@ -52,6 +54,7 @@ figure.6 = ggplot(data = data6, aes(x = Year, y = `Trade Share`, color= Category
 figure.7 = ggplot(data = data7, aes(x = Year, y = `Trade Share`, color= Category))+
   geom_line()+
   facet_wrap(vars(Goods,Country ))+
+  ylab("Share of world goods trade")+
   gta_theme()
 
 

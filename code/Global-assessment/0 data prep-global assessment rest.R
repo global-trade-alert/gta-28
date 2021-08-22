@@ -9,6 +9,8 @@
 
 library(gtalibrary)
 library(tidyverse)
+library(rJava)
+install.packages("rJava")
 
 rm(list = ls())
 gta_setwd()
@@ -38,13 +40,35 @@ include.unpublished = T
 
 
 #get different goods types
-cpc.goods.codes = gtalibrary::cpc.names[cpc.names$cpc <500 & cpc.names$cpc.digit.level == 3, ]$cpc #get all product cpc codes
-cpc.goods.codes.agricultural = gtalibrary::cpc.names[cpc.names$cpc <100 & cpc.names$cpc.digit.level == 3, ]$cpc
-cpc.goods.codes.not.agricultural = gtalibrary::cpc.names[cpc.names$cpc >= 100 & cpc.names$cpc <500 & cpc.names$cpc.digit.level == 3, ]$cpc
-relevant.goods = list("Only Agricultural" = cpc.goods.codes.agricultural, "Not Agricultural" = cpc.goods.codes.not.agricultural)
+# cpc.goods.codes = gtalibrary::cpc.names[cpc.names$cpc <500 & cpc.names$cpc.digit.level == 3, ]$cpc #get all product cpc codes
+# cpc.goods.codes.agricultural = gtalibrary::cpc.names[cpc.names$cpc <100 & cpc.names$cpc.digit.level == 3, ]$cpc
+# cpc.goods.codes.not.agricultural = gtalibrary::cpc.names[cpc.names$cpc >= 100 & cpc.names$cpc <500 & cpc.names$cpc.digit.level == 3, ]$cpc
+# relevant.goods = list("Only Agricultural" = cpc.goods.codes.agricultural, "Not Agricultural" = cpc.goods.codes.not.agricultural)
+# 
+
+#use HS codes
+agricultural.hs = gtalibrary::hs.codes[hs.codes$hs.code < 250000,"hs.code" ]
+non.agricultural.hs = gtalibrary::hs.codes[hs.codes$hs.code >= 250000, "hs.code"] 
+relevant.goods = list("Only Agricultural" = agricultural.hs, "Not Agricultural" = non.agricultural.hs)
+
+
+
 
 #relevant years
 years.to.include = c(2009, 2020)
+
+
+#find interventions to exclude
+gta_data_slicer(affected.flows = "outward subsidy",
+                keep.affected = T, 
+                eligible.firms = "firm-specific", 
+                keep.firms = T,
+                add.unpublished = include.unpublished
+                )
+
+ids.to.exclude = as.character(unique(master.sliced$intervention.id))
+
+
 
 ################################################################################
 #1. get data -------------------------------------------------------------------
@@ -70,8 +94,7 @@ data6 = data.frame("Country"  = NA,
                    "Trade coverage estimate for 2017" = NA,                
                    "Trade coverage estimate for 2018" = NA,
                    "Trade coverage estimate for 2019" = NA,
-                   "Trade coverage estimate for 2020" = NA,                 
-                   "Trade coverage estimate for 2021" = NA, 
+                   "Trade coverage estimate for 2020" = NA, 
                    check.names = F)
   
 
@@ -87,14 +110,14 @@ for(i in 1:length(relevant.juristictions)){
     
     gta_trade_coverage(
       gta.evaluation = c("Red","Amber") ,
-      cpc.sectors = cpc.goods.codes, 
-      keep.cpc = T, 
       implementers = relevant.juristictions[[i]], 
       keep.implementer = T, 
       intervention.types = relevant.intervention.types[[y]], 
       keep.type = T, 
       add.unpublished = include.unpublished, 
-      coverage.period = years.to.include
+      coverage.period = years.to.include, 
+      intervention.ids =  ids.to.exclude ,
+      keep.interventions = F
     )
     
     data6 = rbind(data6, cbind("Country" = names(relevant.juristictions)[i],
@@ -135,7 +158,6 @@ data7 = data.frame("Country"  = NA,
                    "Trade coverage estimate for 2018" = NA,
                    "Trade coverage estimate for 2019" = NA,
                    "Trade coverage estimate for 2020" = NA,                 
-                   "Trade coverage estimate for 2021" = NA, 
                    check.names = F)
 
 #to fill the dataframe                 
@@ -157,7 +179,9 @@ for(i in 1:length(relevant.juristictions)) {
         intervention.types = relevant.intervention.types[[y]],
         keep.type = T, 
         add.unpublished = include.unpublished, 
-        coverage.period = years.to.include
+        coverage.period = years.to.include, 
+        intervention.ids =  ids.to.exclude ,
+        keep.interventions = F
       )
       
       
