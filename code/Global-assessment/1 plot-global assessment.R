@@ -35,6 +35,8 @@ data7 = pivot_longer(names_to = "Year", values_to = "Trade Share", data7, cols =
 data7$`Trade Share` = round(data7$`Trade Share`, 3)
 data7$Year = as.numeric(data7$Year)
 data7 = data7[data7$Year != 2021, ]
+data7[data7$Goods == "Not Agricultural","Goods"] = "Non Agricultural"
+data7[data7$Goods == "Only Agricultural","Goods"] = "Agricultural"
 
 ################################################################################
 #3. plot data ------------------------------------------------------------------
@@ -42,21 +44,24 @@ data7 = data7[data7$Year != 2021, ]
 #SH: SE suggests plotting everything on a single graph, I would split it, otherwise really crowded, what do you think?
 
 #6
-figure.6 = ggplot(data = data6, aes(x = Year, y = `Trade Share`, color= Category))+
-  geom_line()+
+figure.6 = ggplot(data = data6 )+
+  geom_point(data = data6[data6$Year == 2020, ], aes(x = Year, y = `Trade Share`, color = Category))+
+  geom_line(aes(x = Year, y = `Trade Share`, color= Category))+
+  geom_label(data = data6[data6$Year == 2020, ], aes(x = Year, y = `Trade Share`, label = `Trade Share`), nudge_x = -1, nudge_y = 0.01)+
   facet_wrap(vars(Country))+
   ylab("Share of world goods trade")+
   gta_theme()
 
-
+figure.6
 
 #7
-figure.7 = ggplot(data = data7, aes(x = Year, y = `Trade Share`, color= Category))+
+figure.7 = ggplot(data = data7, aes(x = Year, y = `Trade Share`, color= Category, label = `Trade Share`))+
   geom_line()+
   facet_wrap(vars(Goods,Country ))+
   ylab("Share of world goods trade")+
   gta_theme()
 
+figure.7
 
 gta_plot_saver(figure.6, 
                path = data.path, 
