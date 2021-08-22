@@ -4,6 +4,10 @@
 # Please compare this stacked bar chart with a comparable on produced for the years 2009 on using the GTA’s own data (Intervention type “anti-subsidy”; use announcement date for init year; ask Josse to confirm correspondence.). 
 # Hopefully our coverage is better.
 
+#mail by SE: You are right to write that the WTO statistics count the number of investigations. 
+#So the parallel in our case is the number of anti-subsidy measures of any type (including those that did not result in duties). 
+#For the moment, I would include the duty extensions as they typically follow a further investigation.
+
 #3.
 # Please take a look at the charts on pages 3 and 4 of the following document: https://docs.wto.org/dol2fe/Pages/SS/directdoc.aspx?filename=q:/G/SCM/W546R12.pdf&Open=True. 
 # Please suggest an interesting way of highlighting how few WTO members have made subsidy notifications. 
