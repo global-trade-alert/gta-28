@@ -106,11 +106,13 @@ master.sliced$implementing.jurisdiction = as.character(master.sliced$implementin
 master.sliced[master.sliced$implementing.jurisdiction %in% eu.members ,"implementing.jurisdiction" ] = "EU"
 master.sliced = unique(master.sliced)
 master.sliced[!master.sliced$implementing.jurisdiction %in% c("EU", "United States of America", "China") ,"implementing.jurisdiction" ] = "rest.of.the.world"
-
+master.sliced = unique(master.sliced)
 
 #reduce to relevant columns
-master.sliced = master.sliced %>% select(c("implementing.jurisdiction", "date.announced", ))
+master.sliced = master.sliced %>% select(c("implementing.jurisdiction", "date.announced", "intervention.id" ))
+master.sliced = unique(master.sliced)
 master.sliced$date.announced = year(master.sliced$date.announced)
+master.sliced = master.sliced %>% select(c("implementing.jurisdiction", "date.announced" ))
 
 #aggregate
 data1.gta = data.frame(table(master.sliced))
