@@ -19,6 +19,9 @@ library(tidyverse)
 library(readxl)
 library(IMFData)
 library(readxl)
+library(rvest)
+library(xml2)
+
 rm(list = ls())
 gta_setwd()
 
@@ -235,7 +238,19 @@ data1 = t(data.frame("EU" = data1.eu,
                    "China" = data1.cn, 
                    "Rest.G20" = data1.rest))
 
+################################################################################
+#2. Task 2 ------------------------------------------------------------------
 
+scraping.wto = read_html("https://www.wto.org/english/tratop_e/dispu_e/find_dispu_cases_e.htm")
+
+data2 = scraping.wto %>%
+  html_nodes("div")
+
+data2[1]
+
+scraping_wiki <- read_html("https://en.wikipedia.org/wiki/Web_scraping")
+ul_text <- scraping_wiki %>%
+  html_nodes("ul") 
 ################################################################################
 #3. aggregate data ------------------------------------------------------------------
 
