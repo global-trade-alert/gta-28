@@ -34,7 +34,7 @@ relevant.juristictions = list("EU" = eu.countries, "USA" = "United States of Ame
 
 
 #inclue unpublished interventions?
-include.unpublished = F
+include.unpublished = T
 
 
 #get different goods types
