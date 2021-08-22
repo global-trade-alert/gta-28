@@ -56,6 +56,8 @@ figure.6
 
 #7
 figure.7 = ggplot(data = data7, aes(x = Year, y = `Trade Share`, color= Category, label = `Trade Share`))+
+  geom_point(data = data7[data7$Year == 2020, ], aes(x = Year, y = `Trade Share`, color = Category))+
+  geom_label(data = data7[data7$Year == 2020, ], aes(x = Year, y = `Trade Share`, label = `Trade Share`), nudge_x = -1.5, nudge_y = 0.03)+
   geom_line()+
   facet_wrap(vars(Goods,Country ))+
   ylab("Share of world goods trade")+
