@@ -76,19 +76,45 @@ names(data1) = c("reporting.member", 2000:2020)
 rest.of.the.world = colSums(subset(data1, !reporting.member %in% juristictions)[,2:ncol(data1) ], na.rm = T)
 rest.of.the.world = c("rest.of.the.world", rest.of.the.world)
 data1 = rbind(data1[data1$reporting.member %in% juristictions,], rest.of.the.world)
-
 data1[data1$reporting.member == "European Union2", "reporting.member"] = "EU"
+data1[data1$reporting.member == "United States", "reporting.member"] = "United States of America"
 
-gta_data_slicer(implementing.country = implementing.juristiction, 
-                keep.implementer = T, 
-                announcement.period = c("2009-01-01", NA), 
+data1.wto = data1
+
+
+#gather and adjust to later add to other data
+data1.wto = gather(data1.wto, key = "years", value = "investigations", 2:ncol(data1.wto))
+colnames(data1.wto) = c("Country", "Year", "Investigations")
+data1.wto$Data = "WTO"
+
+
+#get GTA data
+gta_data_slicer(announcement.period = c("2009-01-01", NA), 
                 intervention.types = "Anti-subsidy", 
                 keep.type = T, 
                 add.unpublished = include.unpublished
                  
 )
 
+#adjust implementer to EU and rest of world
+eu.members = gtalibrary::country.names[country.names$is.eu == TRUE, ]$name
+master.sliced$implementing.jurisdiction = as.character(master.sliced$implementing.jurisdiction)
+master.sliced[master.sliced$implementing.jurisdiction %in% eu.members ,"implementing.jurisdiction" ] = "EU"
+master.sliced = unique(master.sliced)
+master.sliced[!master.sliced$implementing.jurisdiction %in% c("EU", "United States of America", "China") ,"implementing.jurisdiction" ] = "rest.of.the.world"
 
+
+#reduce to relevant columns
+master.sliced = master.sliced %>% select(c("implementing.jurisdiction", "date.announced", ))
+master.sliced$date.announced = year(master.sliced$date.announced)
+
+#aggregate
+data1.gta = data.frame(table(master.sliced))
+colnames(data1.gta) = c("Country", "Year", "Investigations")
+data1.gta$Data = "GTA"
+
+#put data together
+data1 = rbind(data1.gta, data1.wto)
 
 
 ################################################################################

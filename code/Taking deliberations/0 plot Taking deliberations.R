@@ -33,10 +33,7 @@ data3 = readRDS(paste0(path.data, "wto.members.reporting.subsidies.RData"))
 
 #1.
 data1[is.na(data1)] = 0
-data1[2:ncol(data1)] = as.numeric(unlist(data1[2:ncol(data1)]))
-data1 = gather(data1, key = "year", value = "investigations", 2:ncol(data1))
-data1$year = as.factor(data1$year)
-
+data1$Investigations = as.numeric(data1$Investigations)
 
 #2
 
@@ -58,10 +55,13 @@ data3.2 = gather(data3[, 1:4], key = "kind.of.notification", value = "number", 2
 #2. Plot -----------------------------------------------------------------------
 
 #1.
-ggplot(data1, aes(x = reporting.member, y = investigations, fill = year))+ 
-  geom_col()
+ggplot(data1[data1$Data == "WTO",], aes(x = Year, y = Investigations, fill = Country))+ 
+  geom_col()+
+  ylim(0, 250)
 
-
+ggplot(data1[data1$Data == "GTA",], aes(x = Year, y = Investigations, fill = Country))+ 
+  geom_col()+
+  ylim(0, 250)
 #2.
 
 #quick and dirty approach, at later stage add gta colors, maybe make heatmap
