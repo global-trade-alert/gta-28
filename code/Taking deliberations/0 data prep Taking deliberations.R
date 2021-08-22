@@ -45,7 +45,7 @@ implementing.juristiction = c("United States of America", "China", eu)
 
 
 #include unpublished
-include.unpublished = F
+include.unpublished = T
 
 #parameters for 
 import.restrictions = int.mast.types$intervention.type[int.mast.types$is.at.the.border==1]
@@ -180,7 +180,8 @@ for (a in different.intervention.type.lists) {
     keep.type = T,
     affected.country = implementing.juristiction,
     keep.affected = T,
-    gta.evaluation = c("Red", "Amber")
+    gta.evaluation = c("Red", "Amber"), 
+    add.unpublished = include.unpublished
   )
   
   
