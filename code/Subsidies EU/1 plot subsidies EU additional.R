@@ -23,14 +23,14 @@ library(openxlsx)
 
 gta_setwd()
 
-path.in = "0 dev/gta-28-sh/data/Subsidies China/"
-path.gta = "0 report production/GTA 28/tables & figures/China/"
+path.in = "0 dev/gta-28-sh/data/Subsidies EU/"
+path.gta = "0 report production/GTA 28/tables & figures/EU-28/"
 
 ################################################################################
 # 1. get data  -----------------------------------------------------------------
 
 
-data = readRDS(paste0(path.in, "Shares.China.RData"))
+data = readRDS(paste0(path.in, "Shares.EU.RData"))
 
 
 ################################################################################
@@ -47,6 +47,15 @@ p1 = ggplot(data, aes(x = share.of.export.value, y = share.of.interventions))+
        x = "share of total goods export", 
        y = "share of total number of inward subsidy interventions"
   )
+
+p2 = ggplot(data, aes(x = share.of.export.value, y = share.of.interventions))+
+  geom_point()+
+  labs(title =  "China share of exports to share of number of subsidies per sector (3 digit CPC)", 
+       x = "share of total goods export", 
+       y = "share of total number of inward subsidy interventions"
+  )
+
+
 
 gta_plot_saver(p1, 
                path = path.gta, 

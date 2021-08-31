@@ -54,10 +54,14 @@ gta_data_slicer(implementing.country = relevant.juristiction,
 ################################################################################
 # 2. Prep data -----------------------------------------------------------------
 
-#prepare EU data
-
+#prepare EU data (basically do away with all intra EU trade and only have exports of EU outwards remaining)
 trade.base.bilateral$a.un[trade.base.bilateral$a.un %in% relevant.juristiction] = "EU-28"
 trade.base.bilateral$i.un[trade.base.bilateral$i.un %in% relevant.juristiction] = "EU-28"
+trade.base.bilateral = subset(trade.base.bilateral, i.un != "EU-28")
+
+
+
+
 
 
 
@@ -107,7 +111,7 @@ data = merge(data, data.sector, by.x = "cpc", by.y = "affected.sector", all = T)
 ################################################################################
 # 3. Save data -----------------------------------------------------------------
 
-saveRDS(data, paste0(path.out, "Shares.China.RData"))
-write.xlsx(data, paste0(path.out, "Shares.China.xlsx"))
+saveRDS(data, paste0(path.out, "Shares.EU.RData"))
+write.xlsx(data, paste0(path.out, "Shares.EU.xlsx"))
 write.xlsx(data, paste0(path.gta, "Figure.extra.xlsx"))
 
