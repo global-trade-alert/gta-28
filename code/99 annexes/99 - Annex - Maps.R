@@ -22,11 +22,10 @@ library(gtalibrary)
 # loadfonts(device="win")
 
 gta_setwd()
-gta_setwd()
-gta26.path = "0 report production/GTA 26/"
+gta26.path = "0 report production/GTA 28/"
 data.path = "data/99 annex - maps/"
 out.path = "tables & figures/99 - Annex - maps/"
-source(paste0(gta26.path, "help files/GTA 26 cutoff and definitions.R"))
+source(paste0(gta26.path, "help files/GTA28 settings.R"))
 
 gta_colour_palette()
 
@@ -61,6 +60,9 @@ conversion$name[conversion$name=="United States of America"]<-"the United States
 conversion$name[conversion$name=="Republic of Korea"]<-"South Korea"
 conversion$name[conversion$name=="Russian Federation"]<-"Russia"
 
+g20.members <- country.names$un_code[country.names$is.g20]
+g20.member.names <- country.names$name[country.names$is.g20]
+
 # cty = "410"
 #################### MAPS  ###########################
 for(cty in g20.members){
@@ -84,8 +86,8 @@ for(cty in g20.members){
   
   # CALCULATE THE GRADIENT BREAKS
   world$breaks[world$value == 0] <- "0"
-  world$breaks[world$value >= 201] <- "4"
-  world$breaks[world$value >= 101 & world$value <=200] <- "3"
+  world$breaks[world$value >= 251] <- "4"
+  world$breaks[world$value >= 101 & world$value <=250] <- "3"
   world$breaks[world$value >= 51 & world$value <=100] <- "2"
   world$breaks[world$value >= 1 & world$value <=50] <- "1"
   
@@ -99,7 +101,7 @@ for(cty in g20.members){
     coord_fixed() + # Important to fix world map proportions
     scale_x_continuous(limits=c(-13900000,17000000))+
     labs(x="", y="") +
-    scale_fill_manual(values = c("0"="#dadada","1"=gta_colour$blue[4],"2"=gta_colour$blue[3],"3"=gta_colour$blue[2],"4"=gta_colour$blue[1]), position="bottom", labels=c("0","1 - 50","51 - 100","101 - 200","201 or more")) + # Set color gradient
+    scale_fill_manual(values = c("0"="#dadada","1"=gta_colour$blue[4],"2"=gta_colour$blue[3],"3"=gta_colour$blue[2],"4"=gta_colour$blue[1]), position="bottom", labels=c("0","1 - 50","51 - 100","101 - 250","251 or more")) + # Set color gradient
     theme(axis.title.x=element_blank(),
           axis.text.x=element_blank(),
           axis.ticks.x=element_blank(),
@@ -158,8 +160,8 @@ for(cty in g20.members){
   
   # CALCULATE THE GRADIENT BREAKS
   world$breaks[world$value == 0] <- "0"
-  world$breaks[world$value >= 201] <- "4"
-  world$breaks[world$value >= 101 & world$value <=200] <- "3"
+  world$breaks[world$value >= 251] <- "4"
+  world$breaks[world$value >= 101 & world$value <=250] <- "3"
   world$breaks[world$value >= 51 & world$value <=100] <- "2"
   world$breaks[world$value >= 1 & world$value <=50] <- "1"
   
@@ -170,7 +172,7 @@ for(cty in g20.members){
     coord_fixed() + # Important to fix world map proportions
     labs(x="", y="") +
     scale_x_continuous(limits=c(-13900000,17000000))+
-    scale_fill_manual(values = c("0"="#dadada","1"=gta_colour$blue[4],"2"=gta_colour$blue[3],"3"=gta_colour$blue[2],"4"=gta_colour$blue[1]), position="bottom", labels=c("0","1 - 50","51 - 100","101 - 200","201 or more")) + # Set color gradient
+    scale_fill_manual(values = c("0"="#dadada","1"=gta_colour$blue[4],"2"=gta_colour$blue[3],"3"=gta_colour$blue[2],"4"=gta_colour$blue[1]), position="bottom", labels=c("0","1 - 50","51 - 100","101 - 250","251 or more")) + # Set color gradient
     theme(axis.title.x=element_blank(),
           axis.text.x=element_blank(),
           axis.ticks.x=element_blank(),

@@ -21,21 +21,24 @@ library(gtalibrary)
 # windowsFonts(my_font=windowsFont("Open Sans"))
 
 gta_setwd()
-gta26.path = "0 report production/GTA 26/"
+gta26.path = "0 report production/GTA 28/"
 data.path = "data/99 annex - bar charts/"
 out.path = "tables & figures/99 - Annex - bar charts/"
-source(paste0(gta26.path, "help files/GTA 26 cutoff and definitions.R"))
+source(paste0(gta26.path, "help files/GTA28 settings.R"))
 
 load("data/master_plus.Rdata")
 
 gta_colour_palette()
+
+g20.members <- country.names$un_code[country.names$is.g20]
+g20.member.names <- country.names$name[country.names$is.g20]
 
 ## bar chart data: cumulative number of implemented interventions for each G20 member
 master$protect=as.numeric(master$gta.evaluation!="Green")
 master$year=year(master$date.implemented)
 bars.yr=aggregate(intervention.id ~ i.un + year + protect, subset(master, i.un %in% g20.members & is.na(date.implemented)==F) , function(x) length(unique(x)))
 
-bars=expand.grid(unique(bars.yr$i.un),c(2009:2020), c(0,1))
+bars=expand.grid(unique(bars.yr$i.un),c(2009:2021), c(0,1))
 names(bars)=c("i.un","year", "protect")
 bars$measures=apply(bars, 1, function(x) sum(subset(bars.yr, i.un==x[1] & year<=x[2] & protect==x[3])$intervention.id))
 
@@ -52,8 +55,8 @@ annex.bar.charts <- function(member=NULL) {
     p1 <- ggplot(data=subset(bars, i.un==g20.members[member] & protect==1), aes(y=measures, x=year))+
       geom_bar(stat="identity", fill=gta_colour$red[1])+
       geom_label(aes(label=measures), colour="#555555", position=position_dodge(width=0.9), vjust=-0.5)+
-      scale_x_continuous(breaks=2009:2020)+
-      scale_y_continuous(limits=c(0,as.numeric(round(max(subset(bars, i.un==g20.members[member] & protect==1)$measures)/100+.5)*100)))+
+      scale_x_continuous(breaks=2009:2021)+
+      scale_y_continuous(limits=c(0,as.numeric(round(max(subset(bars, i.un==g20.members[member] & protect==1)$measures)/100+.5)*110)))+
       labs(x="\nYear", y="Number of interventions implemented\nfrom November 2008 until the end of the given year (or YTD)\n",
            fill="")+
       gta_theme(background.color = "#FFFFFF")    
@@ -63,8 +66,8 @@ annex.bar.charts <- function(member=NULL) {
     p2 <- ggplot(data=subset(bars, i.un==g20.members[member] & protect==1), aes(y=measures, x=year))+
       geom_bar(stat="identity", fill=gta_colour$red[1])+
       geom_label(aes(label=measures), colour="#555555", position=position_dodge(width=0.9), vjust=-0.5)+
-      scale_x_continuous(breaks=2009:2020)+
-      scale_y_continuous(limits=c(0,as.numeric(round(max(subset(bars, i.un==g20.members[member] & protect==1)$measures)/100+.5)*100)))+
+      scale_x_continuous(breaks=2009:2021)+
+      scale_y_continuous(limits=c(0,as.numeric(round(max(subset(bars, i.un==g20.members[member] & protect==1)$measures)/100+.5)*110)))+
       labs(x="Year", y="Number of interventions implemented\nfrom November 2008 until the end of the given year",
            fill="")+
       gta_theme(background.color = "#FFFFFF")
@@ -107,8 +110,8 @@ annex.bar.charts <- function(member=NULL) {
     p1 <- ggplot(data=subset(bars, i.un==g20.members[member] & protect==0), aes(y=measures, x=year))+
       geom_bar(stat="identity", fill=gta_colour$green[1])+
       geom_label(aes(label=measures), colour="#555555", position=position_dodge(width=0.9), vjust=-0.5)+
-      scale_x_continuous(breaks=2009:2020)+
-      scale_y_continuous(limits=c(0,as.numeric(round(max(subset(bars, i.un==g20.members[member] & protect==1)$measures)/100+.5)*100)))+
+      scale_x_continuous(breaks=2009:2021)+
+      scale_y_continuous(limits=c(0,as.numeric(round(max(subset(bars, i.un==g20.members[member] & protect==1)$measures)/100+.5)*110)))+
       labs(x="\nYear", y="Number of interventions implemented\nfrom November 2008 until the end of the given year (or YTD)\n",
            fill="")+
       gta_theme(background.color = "#FFFFFF")
@@ -118,8 +121,8 @@ annex.bar.charts <- function(member=NULL) {
     p2 <- ggplot(data=subset(bars, i.un==g20.members[member] & protect==0), aes(y=measures, x=year))+
       geom_label(aes(label=measures), colour="#555555", position=position_dodge(width=0.9), vjust=-0.5)+
       geom_bar(stat="identity", fill=gta_colour$green[1])+
-      scale_x_continuous(breaks=2009:2020)+
-      scale_y_continuous(limits=c(0,as.numeric(round(max(subset(bars, i.un==g20.members[member] & protect==1)$measures)/100+.5)*100)))+
+      scale_x_continuous(breaks=2009:2021)+
+      scale_y_continuous(limits=c(0,as.numeric(round(max(subset(bars, i.un==g20.members[member] & protect==1)$measures)/100+.5)*110)))+
       labs(x="Year", y="Number of interventions implemented\nfrom November 2008 until the end of the given year",
            fill="")+
       gta_theme(background.color = "#FFFFFF")
@@ -164,4 +167,5 @@ annex.bar.charts <- function(member=NULL) {
 for (m in 1:length(g20.members)) {
   annex.bar.charts(m)
 }
-  
+
+

@@ -7,18 +7,26 @@ library(openxlsx)
 library(gtalibrary)
 
 gta_setwd()
-gta26.path = "0 report production/GTA 26/"
+gta26.path = "0 report production/GTA 28/"
 data.path = "data/99 annex - title tables/"
 out.path = "tables & figures/99 - Annex - title tables/"
-source(paste0(gta26.path, "help files/GTA 26 cutoff and definitions.R"))
+source(paste0(gta26.path, "help files/GTA28 settings.R"))
+
+
+g20.members <- country.names$un_code[country.names$is.g20]
+g20.member.names <- country.names$name[country.names$is.g20]
+
 
 gta_colour_palette()
+
+includ.unpublished = T
+
 
 chapters <- c("D","E","F","G","I","L","M","P","TARIFF","X")
 # remove.ids = c(indian.2.3.exp.id)
 
 for(cty in country.names$name[country.names$is.g20]){
-  gta_trade_coverage(coverage.period = c(2009,2020),
+  gta_trade_coverage(coverage.period = c(2009,2021),
                      gta.evaluation = c("Red","Amber"),
                      implementation.period = c("2008-11-01",cutoff.date),
                      exporters=cty,
@@ -27,8 +35,8 @@ for(cty in country.names$name[country.names$is.g20]){
                      mast.chapters = chapters,
                      keep.mast = T,
                      group.mast = F,
-                     # intervention.ids = manually.removed.interventions,
-                     # keep.interventions = F,
+                     intervention.ids = firm.specific.outward.subsidies,
+                     keep.interventions = F
                      # data.path = d.path,
                      # replica.path =r.path
                      )
@@ -62,7 +70,7 @@ for(cty in country.names$name[country.names$is.g20]){
   
   
   write.xlsx(trade.coverage.estimates, file=paste0(gta26.path, out.path, cty,".xlsx"), row.names = F)
-  rm(trade.coverage.estimates)
+  #rm(trade.coverage.estimates)
   print(cty)
 }
 

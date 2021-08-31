@@ -21,14 +21,21 @@ library(gtalibrary)
 # windowsFonts(my_font=windowsFont("Open Sans"))
 
 gta_setwd()
-gta26.path = "0 report production/GTA 26/"
+gta26.path = "0 report production/GTA 28/"
 data.path = "data/99 annex - criterion charts/"
 out.path = "tables & figures/99 - Annex - criterion charts/"
-source(paste0(gta26.path, "help files/GTA 26 cutoff and definitions.R"))
+source(paste0(gta26.path, "help files/GTA28 settings.R"))
 
 gta_colour_palette()
 
-run.calc=F
+g20.members <- country.names$un_code[country.names$is.g20]
+g20.member.names <- country.names$name[country.names$is.g20]
+break.date<-c("2019-12-31")
+
+run.calc=T
+
+#PLEASE NOTE: The change in China share intervention still in force (harmful und lib) comes likely from a reclassification of the WIND Dump, the change in korea liberalizing after 2020 is due to the small number of interventions (8-9) recorded in that category, therefore jumps are to be expected.
+
 
 if(run.calc){
   mt=read.csv("data/database replica/gta_measure_type.csv")
@@ -61,10 +68,10 @@ if(run.calc){
   
   
   hits<-aggregate(intervention.id ~ i.un + protect + murky + tariff + prior + currently.in.force, data=g20, function(x) length(unique(x)))
-  products<-aggregate(affected.product ~ i.un + protect + currently.in.force, data=subset(g20.TL, prior==1), function(x) length(unique(x)))
-  products.imp<-aggregate(affected.product ~ i.un + protect, data=subset(g20.TL, prior==1), function(x) length(unique(x)))
-  products.prior<-aggregate(affected.product ~ i.un + protect + currently.in.force, data=subset(g20.TL, prior==0), function(x) length(unique(x)))
-  products.prior.imp<-aggregate(affected.product ~ i.un + protect, data=subset(g20.TL, prior==0), function(x) length(unique(x)))
+  products<-aggregate(affected.product ~ i.un + protect + currently.in.force, data=subset(g20.TL, prior==0), function(x) length(unique(x)))
+  products.imp<-aggregate(affected.product ~ i.un + protect, data=subset(g20.TL, prior==0), function(x) length(unique(x)))
+  products.prior<-aggregate(affected.product ~ i.un + protect + currently.in.force, data=subset(g20.TL, prior==1), function(x) length(unique(x)))
+  products.prior.imp<-aggregate(affected.product ~ i.un + protect, data=subset(g20.TL, prior==1), function(x) length(unique(x)))
   
   # "Share of all interventions implemented since November 2008 that are harmful"
   # "Share of harmful interventions that are 'murky' (not tariffs or trade defence)"
@@ -106,7 +113,7 @@ if(run.calc){
   current$name[current$name=="United States of America"]<-"US"
   current$name[current$name=="Republic of Korea"]<-"South Korea"
   # current$name[current$name=="Russian Federation"]<-"Russia"
-  current$name<-paste(current$name," in 2020" ,sep="")
+  current$name<-paste(current$name," in 2020 and 2021" ,sep="")
   
   current$score[is.na(current$score)==T]<-0
   
@@ -119,7 +126,7 @@ if(run.calc){
   g20.avg<-as.data.frame(cSplit(g20.avg,2,direction="long", sep=","))
   g20.avg$score<-apply(g20.avg, 1, function(x) mean(current$score[current$c==x[2]]))
   
-  g20.avg$name<-"G20 mean in 2020"
+  g20.avg$name<-"G20 mean in 2020 and 2021"
   
   
   ## pre cutoff
