@@ -18,37 +18,37 @@ rm(list = ls())
 library(readr)
 library(gtalibrary)
 library(ggplot2)
+library(openxlsx)
 
 
 gta_setwd()
 
 
-subsidy.intervention.types <- subset(gtalibrary::int.mast.types, mast.subchapter.id %in% c("L","P7","P8","P9"))$intervention.type
-subsidy.intervention.types = subsidy.intervention.types[subsidy.intervention.types != "Export-related non-tariff measure, nes"]
-
 subsidy.chapter = "L"
 cut.off = "2019-12-31"
-
+relevant.juristiction = "China"
+path.out = "0 dev/gta-28-sh/data/Subsidies China/"
+path.gta = "0 report production/GTA 28/tables & figures/China/"
 
 ################################################################################
 # 1. Get data-------------------------------------------------------------------
 
 #get conversions
 hs.to.cpc <- read_delim("definitions/cpc-to-hs/hs 2012 to cpc 2_1.csv", 
-                                 ";", escape_double = FALSE, trim_ws = TRUE)
+                        ";", escape_double = FALSE, trim_ws = TRUE)
 
 #get trade data
-gtalibrary::gta_trade_value_bilateral(exporting.country = "China",keep.exporter = T, trade.data = 2019)
+gtalibrary::gta_trade_value_bilateral(exporting.country = relevant.juristiction,keep.exporter = T, trade.data = 2019)
 
 #get intervention data
-gta_data_slicer(implementing.country = "China", 
+gta_data_slicer(implementing.country = relevant.juristiction, 
                 keep.implementer = T, 
                 gta.evaluation = c("Red", "Amber"),
                 implementation.period = c(NA, cut.off), 
                 keep.implementation.na = F, 
                 mast.chapters = subsidy.chapter, 
                 keep.mast = T
-                )
+)
 
 
 ################################################################################
@@ -57,7 +57,7 @@ gta_data_slicer(implementing.country = "China",
 #convert HS to CPC
 data = merge(trade.base.bilateral, hs.to.cpc, by.x = "hs6", by.y = "hs", all.x = T)
 
-length(unique(data$cpc)) #just 185
+length(unique(data$cpc)) #just 190
 
 
 
@@ -74,7 +74,7 @@ master.sliced = master.sliced[!master.sliced$date.removed < "2019-01-01", ]
 master.sliced = rbind(master.sliced, help)
 
 
-length(unique(master.sliced$intervention.id)) #798 interventions
+length(unique(master.sliced$intervention.id)) #1518 interventions
 
 #reduct to relevant variables and split all affected sector to get intervention cpc pairs
 master.sliced = master.sliced[, c("intervention.id", "affected.sector")]
@@ -89,11 +89,16 @@ data.sector = data.sector[data.sector$affected.sector < 500, ]
 #calculate share
 data.sector$share.of.interventions = data.sector$intervention.id / length(unique(master.sliced$intervention.id))
 
+#get everything into one dataset
 data = merge(data, data.sector, by.x = "cpc", by.y = "affected.sector", all = T)
 
-data[is.na(data)] = 0
+#sectors with exports but no interventions are NA, change to 0 for plotting
+#data[is.na(data)] = 0
 
-ggplot(data, aes(x = share.of.export.value, y = share.of.interventions))+
-  geom_point()+
-  scale_y_continuous(trans = "log10")+
-  scale_x_continuous(trans = "log10")
+################################################################################
+# 3. Save data -----------------------------------------------------------------
+
+saveRDS(data, paste0(path.out, "Shares.China.RData"))
+write.xlsx(data, paste0(path.out, "Shares.China.xlsx"))
+write.xlsx(data, paste0(path.gta, "Figure.extra.xlsx"))
+
